@@ -1,62 +1,125 @@
 # Event Ticket Management System
 
-Full-stack web application for event ticketing: creation → booking → payment → QR check-in.
+Full-stack web application for the complete event ticketing lifecycle: creation → booking → payment → QR check-in.
 
-## Stack
+## Features
 
-| Layer | Tech |
+| Phase | Status |
+|---|---|
+| Authentication & User Management | ✅ Boilerplate ready |
+| Event & Ticket Type Management | 🔄 Phase 2 |
+| Booking & Payment (Stripe) | 🔄 Phase 3 |
+| QR Check-In System | 🔄 Phase 4 |
+| Cancellation, Refund & Waitlist | 🔄 Phase 5 |
+| Analytics & Admin Panel | 🔄 Phase 6 |
+| Infrastructure & DevOps | 🔄 Phase 7 |
+
+## Tech Stack
+
+| Layer | Technology |
 |---|---|
 | Backend | Nest.js + TypeORM + PostgreSQL |
-| Frontend | Next.js 16 + Shadcn/UI + Tailwind |
+| Frontend | Next.js 16 + Shadcn/UI + Tailwind CSS |
 | Queue | Redis + BullMQ |
-| Payment | Stripe |
+| Payment | Stripe (VND, test mode) |
 | Storage | Cloudinary |
-| Auth | JWT + Google OAuth |
+| Auth | JWT (access 15m / refresh 7d) + Google OAuth 2.0 |
+| Email | MailDev (dev) / Resend (prod) |
 | Deploy | Docker + GitHub Actions |
 
-## Quick Start (Development)
+## Quick Start
+
+### Prerequisites
+
+- Docker Desktop running
+- Node.js 20+
+- npm 9+
+
+### 1. Clone & configure
 
 ```bash
-# 1. Start infrastructure
-docker compose up -d postgres redis maildev adminer
+git clone <repo-url>
+cd event-ticket-system
+cp apps/api/env-example-relational apps/api/.env
+```
 
-# 2. Setup API
+Edit `apps/api/.env` — minimum required changes:
+- `AUTH_JWT_SECRET` — any random string
+- `AUTH_REFRESH_SECRET` — any random string
+
+### 2. Start infrastructure
+
+```bash
+docker compose up -d postgres redis maildev adminer
+```
+
+> **Note:** If port 5432 is in use by a local PostgreSQL, set `DATABASE_PORT=5433` in the root `.env` and `apps/api/.env`. See [Setup Guide](docs/SETUP.md#port-conflicts).
+
+### 3. Setup & run API
+
+```bash
 cd apps/api
-cp env-example-relational .env   # already done — edit values if needed
 npm install
 npm run migration:run
 npm run seed:run:relational
-npm run start:dev                # http://localhost:3000/docs
-
-# 3. Setup Web (new terminal)
-cd apps/web
-npm install
-npm run dev                      # http://localhost:3001
+npm run start:dev
 ```
 
-## Useful URLs (local dev)
+### 4. Setup & run Web (new terminal)
 
-| Service | URL |
-|---|---|
-| API (Swagger) | http://localhost:3000/docs |
-| Web app | http://localhost:3001 |
-| Adminer (DB UI) | http://localhost:8080 |
-| MailDev (emails) | http://localhost:1080 |
+```bash
+cd apps/web
+npm install
+npm run dev
+```
+
+## URLs (local dev)
+
+| Service | URL | Notes |
+|---|---|---|
+| API (Swagger) | http://localhost:3000/docs | Auto-generated |
+| Web App | http://localhost:3001 | |
+| Adminer (DB UI) | http://localhost:8080 | DB: `event_ticket_db` |
+| MailDev | http://localhost:1080 | Catch all outgoing emails |
 
 ## Project Structure
 
 ```
-apps/
-  api/    — Nest.js backend (based on brocoders/nestjs-boilerplate)
-  web/    — Next.js frontend
-docs/
-  SPEC.md — Product specification with user stories & acceptance criteria
-AGENTS.md — AI agent guide (architecture, patterns, module inventory)
-docker-compose.yaml
+event-ticket-system/
+├── apps/
+│   ├── api/          — Nest.js backend (brocoders/nestjs-boilerplate base)
+│   │   ├── src/
+│   │   │   ├── auth*/        — JWT + Google/Apple/Facebook OAuth
+│   │   │   ├── users/        — User management
+│   │   │   ├── roles/        — Role-based access control
+│   │   │   ├── session/      — Refresh token sessions
+│   │   │   ├── files/        — File upload (local/S3/Cloudinary)
+│   │   │   ├── mail/         — Email templates
+│   │   │   └── database/     — Migrations, seeds
+│   │   └── test/
+│   └── web/          — Next.js 16 frontend (App Router)
+│       ├── app/
+│       ├── components/
+│       └── lib/
+├── docs/
+│   ├── SPEC.md       — Product specification & acceptance criteria
+│   ├── SETUP.md      — Detailed setup & troubleshooting
+│   ├── ARCHITECTURE.md — System architecture overview
+│   └── CONTRIBUTING.md — Development workflow & conventions
+├── AGENTS.md         — AI agent guide
+└── docker-compose.yaml
 ```
 
 ## Documentation
 
-- **Product spec:** `docs/SPEC.md`
-- **AI agent guide:** `AGENTS.md`
-- **API docs:** `http://localhost:3000/docs` (Swagger, auto-generated)
+| Doc | Description |
+|---|---|
+| [docs/SPEC.md](docs/SPEC.md) | Product spec — user stories, acceptance criteria, API surface |
+| [docs/SETUP.md](docs/SETUP.md) | Setup guide — prerequisites, install steps, troubleshooting |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Architecture — modules, DB schema, auth flow, queue design |
+| [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) | Contributing — branching, commits, PR flow, code generation |
+| [AGENTS.md](AGENTS.md) | AI agent guide — patterns, conventions for AI-assisted development |
+
+## Team
+
+HCMUS — CNPM Project, HK2 2025–2026.
