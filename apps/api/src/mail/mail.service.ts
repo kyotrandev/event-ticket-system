@@ -166,4 +166,47 @@ export class MailService {
       },
     });
   }
+
+  async organizerApproved(mailData: MailData<{ firstName: string }>): Promise<void> {
+    const loginUrl = new URL(
+      this.configService.getOrThrow('app.frontendDomain', { infer: true }) + '/login',
+    );
+
+    await this.mailerService.sendMail({
+      to: mailData.to,
+      subject: 'Your organizer account has been approved',
+      text: `Your organizer account on ${this.configService.get('app.name', { infer: true })} has been approved. Log in at ${loginUrl.toString()}`,
+      templatePath: path.join(
+        this.configService.getOrThrow('app.workingDirectory', { infer: true }),
+        'src',
+        'mail',
+        'mail-templates',
+        'organizer-approved.hbs',
+      ),
+      context: {
+        app_name: this.configService.get('app.name', { infer: true }),
+        firstName: mailData.data.firstName,
+        loginUrl: loginUrl.toString(),
+      },
+    });
+  }
+
+  async organizerRejected(mailData: MailData<{ firstName: string }>): Promise<void> {
+    await this.mailerService.sendMail({
+      to: mailData.to,
+      subject: 'Update on your organizer application',
+      text: `Your organizer application on ${this.configService.get('app.name', { infer: true })} could not be approved at this time.`,
+      templatePath: path.join(
+        this.configService.getOrThrow('app.workingDirectory', { infer: true }),
+        'src',
+        'mail',
+        'mail-templates',
+        'organizer-rejected.hbs',
+      ),
+      context: {
+        app_name: this.configService.get('app.name', { infer: true }),
+        firstName: mailData.data.firstName,
+      },
+    });
+  }
 }

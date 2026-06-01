@@ -12,6 +12,7 @@ import {
   HttpCode,
   SerializeOptions,
 } from '@nestjs/common';
+import { ApiOperation } from '@nestjs/swagger';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import {
@@ -135,5 +136,45 @@ export class UsersController {
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: User['id']): Promise<void> {
     return this.usersService.remove(id);
+  }
+
+  @ApiOkResponse({ type: User })
+  @ApiOperation({ summary: 'Approve an organizer account (admin only)' })
+  @ApiParam({ name: 'id', type: String, required: true })
+  @SerializeOptions({ groups: ['admin'] })
+  @Post(':id/approve')
+  @HttpCode(HttpStatus.OK)
+  approveOrganizer(@Param('id') id: User['id']): Promise<User> {
+    return this.usersService.approveOrganizer(id);
+  }
+
+  @ApiOkResponse({ type: User })
+  @ApiOperation({ summary: 'Reject an organizer account (admin only)' })
+  @ApiParam({ name: 'id', type: String, required: true })
+  @SerializeOptions({ groups: ['admin'] })
+  @Post(':id/reject')
+  @HttpCode(HttpStatus.OK)
+  rejectOrganizer(@Param('id') id: User['id']): Promise<User> {
+    return this.usersService.rejectOrganizer(id);
+  }
+
+  @ApiOkResponse({ type: User })
+  @ApiOperation({ summary: 'Lock a user account and invalidate all sessions (admin only)' })
+  @ApiParam({ name: 'id', type: String, required: true })
+  @SerializeOptions({ groups: ['admin'] })
+  @Post(':id/lock')
+  @HttpCode(HttpStatus.OK)
+  lockUser(@Param('id') id: User['id']): Promise<User> {
+    return this.usersService.lockUser(id);
+  }
+
+  @ApiOkResponse({ type: User })
+  @ApiOperation({ summary: 'Unlock a user account (admin only)' })
+  @ApiParam({ name: 'id', type: String, required: true })
+  @SerializeOptions({ groups: ['admin'] })
+  @Post(':id/unlock')
+  @HttpCode(HttpStatus.OK)
+  unlockUser(@Param('id') id: User['id']): Promise<User> {
+    return this.usersService.unlockUser(id);
   }
 }

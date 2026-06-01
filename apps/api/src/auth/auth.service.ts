@@ -1,4 +1,5 @@
 import {
+  ForbiddenException,
   HttpStatus,
   Injectable,
   NotFoundException,
@@ -48,6 +49,26 @@ export class AuthService {
         errors: {
           email: 'notFound',
         },
+      });
+    }
+
+    if (user.status?.id === StatusEnum.locked) {
+      throw new ForbiddenException({
+        status: HttpStatus.FORBIDDEN,
+        errors: {
+          status: 'accountLocked',
+        },
+        message: 'Account is locked. Contact support.',
+      });
+    }
+
+    if (user.status?.id === StatusEnum.pending_approval) {
+      throw new ForbiddenException({
+        status: HttpStatus.FORBIDDEN,
+        errors: {
+          status: 'accountPendingApproval',
+        },
+        message: 'Account pending approval.',
       });
     }
 
@@ -136,7 +157,7 @@ export class AuthService {
       user = userByEmail;
     } else if (socialData.id) {
       const role = {
-        id: RoleEnum.user,
+        id: RoleEnum.customer,
       };
       const status = {
         id: StatusEnum.active,
@@ -194,14 +215,17 @@ export class AuthService {
   }
 
   async register(dto: AuthRegisterLoginDto): Promise<void> {
+    const roleId = dto.role ?? RoleEnum.customer;
+    const isOrganizer = roleId === RoleEnum.organizer;
+
     const user = await this.usersService.create({
       ...dto,
       email: dto.email,
       role: {
-        id: RoleEnum.user,
+        id: roleId,
       },
       status: {
-        id: StatusEnum.inactive,
+        id: isOrganizer ? StatusEnum.pending_approval : StatusEnum.active,
       },
     });
 

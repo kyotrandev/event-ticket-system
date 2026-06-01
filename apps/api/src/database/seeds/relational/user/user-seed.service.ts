@@ -45,15 +45,15 @@ export class UserSeedService {
       );
     }
 
-    const countUser = await this.repository.count({
+    const countCustomer = await this.repository.count({
       where: {
         role: {
-          id: RoleEnum.user,
+          id: RoleEnum.customer,
         },
       },
     });
 
-    if (!countUser) {
+    if (!countCustomer) {
       const salt = await bcrypt.genSalt();
       const password = await bcrypt.hash('secret', salt);
 
@@ -64,8 +64,8 @@ export class UserSeedService {
           email: 'john.doe@example.com',
           password,
           role: {
-            id: RoleEnum.user,
-            name: 'Admin',
+            id: RoleEnum.customer,
+            name: 'Customer',
           },
           status: {
             id: StatusEnum.active,

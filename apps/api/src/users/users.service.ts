@@ -1,6 +1,8 @@
 import {
+  ForbiddenException,
   HttpStatus,
   Injectable,
+  NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -13,6 +15,8 @@ import { AuthProvidersEnum } from '../auth/auth-providers.enum';
 import { FilesService } from '../files/files.service';
 import { RoleEnum } from '../roles/roles.enum';
 import { StatusEnum } from '../statuses/statuses.enum';
+import { SessionService } from '../session/session.service';
+import { MailService } from '../mail/mail.service';
 import { IPaginationOptions } from '../utils/types/pagination-options';
 import { FileType } from '../files/domain/file';
 import { Role } from '../roles/domain/role';
@@ -24,6 +28,8 @@ export class UsersService {
   constructor(
     private readonly usersRepository: UserRepository,
     private readonly filesService: FilesService,
+    private readonly sessionService: SessionService,
+    private readonly mailService: MailService,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
@@ -284,5 +290,87 @@ export class UsersService {
 
   async remove(id: User['id']): Promise<void> {
     await this.usersRepository.remove(id);
+  }
+
+  async approveOrganizer(id: User['id']): Promise<User> {
+    const user = await this.usersRepository.findById(id);
+
+    if (!user) {
+      throw new NotFoundException({ status: HttpStatus.NOT_FOUND, error: 'notFound' });
+    }
+
+    if (user.status?.id !== StatusEnum.pending_approval) {
+      throw new ForbiddenException({
+        status: HttpStatus.FORBIDDEN,
+        message: 'User is not pending approval.',
+      });
+    }
+
+    const updated = await this.usersRepository.update(id, {
+      status: { id: StatusEnum.active },
+    });
+
+    await this.mailService.organizerApproved({
+      to: user.email ?? '',
+      data: { firstName: user.firstName ?? '' },
+    });
+
+    return updated!;
+  }
+
+  async rejectOrganizer(id: User['id']): Promise<User> {
+    const user = await this.usersRepository.findById(id);
+
+    if (!user) {
+      throw new NotFoundException({ status: HttpStatus.NOT_FOUND, error: 'notFound' });
+    }
+
+    if (user.status?.id !== StatusEnum.pending_approval) {
+      throw new ForbiddenException({
+        status: HttpStatus.FORBIDDEN,
+        message: 'User is not pending approval.',
+      });
+    }
+
+    const updated = await this.usersRepository.update(id, {
+      status: { id: StatusEnum.locked },
+    });
+
+    await this.mailService.organizerRejected({
+      to: user.email ?? '',
+      data: { firstName: user.firstName ?? '' },
+    });
+
+    return updated!;
+  }
+
+  async lockUser(id: User['id']): Promise<User> {
+    const user = await this.usersRepository.findById(id);
+
+    if (!user) {
+      throw new NotFoundException({ status: HttpStatus.NOT_FOUND, error: 'notFound' });
+    }
+
+    const updated = await this.usersRepository.update(id, {
+      status: { id: StatusEnum.locked },
+    });
+
+    await this.sessionService.deleteByUserId({ userId: id });
+
+    return updated!;
+  }
+
+  async unlockUser(id: User['id']): Promise<User> {
+    const user = await this.usersRepository.findById(id);
+
+    if (!user) {
+      throw new NotFoundException({ status: HttpStatus.NOT_FOUND, error: 'notFound' });
+    }
+
+    const updated = await this.usersRepository.update(id, {
+      status: { id: StatusEnum.active },
+    });
+
+    return updated!;
   }
 }
