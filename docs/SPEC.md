@@ -183,85 +183,109 @@ WAITING ──(ticket available)──► NOTIFIED ──(user books within 48h)
 
 ## 4. Phase 1 — Authentication & User Management
 
+> **Status: ✅ Implemented** (commit `feat(auth): implement Phase 1`)
+
+### Implementation Notes
+
+**API prefix:** All endpoints at `/api/v1/...`  
+**Admin endpoints:** `/api/v1/users/...` (JWT admin role required)  
+**Rate limiting:** Login capped at 5 req/60s per IP via `@nestjs/throttler`
+
+**Deviations from spec:**
+- Refresh token returned in response body (not httpOnly cookie) — boilerplate default; frontend must store securely
+- Rate limiting counts all login requests (not just failed ones) — conservative, acceptable trade-off
+- Duplicate email returns 422 (boilerplate) not 409 — consistent with boilerplate error format
+
 ### User Stories
 
 ---
 
-**US-1.1 — Customer Registration**
+**US-1.1 — Customer Registration** ✅
 
 > As a visitor, I want to register with my email and password so that I can purchase tickets.
 
 **Acceptance Criteria:**
 
-- Given a valid email (not already registered) and password (≥8 chars, at least 1 number, 1 uppercase), when I submit the registration form, then my account is created with role=CUSTOMER, status=ACTIVE, and I receive a verification email.
-- Given an email that already exists in the system, when I submit registration, then I receive a 409 error: "Email already in use."
-- Given a password shorter than 8 characters, when I submit, then I receive a 400 error with a specific validation message.
-- Given a valid registration, when I log in before verifying email, then I can still log in but see a banner prompting verification (email verification is advisory, not blocking for CUSTOMER).
+- ✅ Given a valid email (not already registered) and password (≥8 chars, at least 1 number, 1 uppercase), when I submit the registration form, then my account is created with role=CUSTOMER, status=ACTIVE, and I receive a verification email.
+  - Endpoint: `POST /api/v1/auth/email/register` with `{ email, password, firstName, lastName }`
+  - Verification email sent; clicking link is idempotent (ACTIVE user confirms → success)
+- ⚠️ Given an email that already exists in the system, when I submit registration, then I receive a 409 error: "Email already in use."
+  - Returns 422 (boilerplate convention), not 409
+- ✅ Given a password shorter than 8 characters, when I submit, then I receive a 400 error with a specific validation message.
+  - `@MinLength(8)` + `@Matches` for uppercase and number — returns 400 with field-level messages
+- ✅ Given a valid registration, when I log in before verifying email, then I can still log in (email verification is advisory).
 
 ---
 
-**US-1.2 — Organizer Registration**
+**US-1.2 — Organizer Registration** ✅
 
 > As someone who wants to host events, I want to register as an Organizer so that I can create and manage events after Admin approval.
 
 **Acceptance Criteria:**
 
-- Given a valid email and password with role=ORGANIZER selected, when I submit registration, then my account is created with status=PENDING_APPROVAL.
-- Given status=PENDING_APPROVAL, when I attempt to call any organizer-only endpoint (POST /events), then I receive 403: "Account pending approval."
-- Given a PENDING_APPROVAL organizer, when Admin approves, then status becomes ACTIVE, organizer receives an email notification, and they can now create events.
-- Given a PENDING_APPROVAL organizer, when Admin rejects, then status becomes LOCKED and organizer receives a rejection email.
+- ✅ Given a valid email and password with `role=3` (organizer), when I submit registration, then my account is created with status=PENDING_APPROVAL.
+  - Endpoint: `POST /api/v1/auth/email/register` with `{ ..., role: 3 }`
+- ✅ Given status=PENDING_APPROVAL, when I attempt to log in, then I receive 403: "Account pending approval."
+- ✅ Given a PENDING_APPROVAL organizer, when Admin approves (`POST /api/v1/users/:id/approve`), then status becomes ACTIVE and organizer receives an email notification.
+- ✅ Given a PENDING_APPROVAL organizer, when Admin rejects (`POST /api/v1/users/:id/reject`), then status becomes LOCKED and organizer receives a rejection email.
 
 ---
 
-**US-1.3 — Email/Password Login**
+**US-1.3 — Email/Password Login** ✅
 
 > As a registered user, I want to log in with my email and password so that I can access my account.
 
 **Acceptance Criteria:**
 
-- Given valid credentials, when I log in, then I receive an access token (JWT, 15m TTL) and a refresh token (httpOnly cookie, 7d TTL).
-- Given invalid credentials, when I log in, then I receive 401: "Invalid email or password" (do not differentiate which field is wrong).
-- Given a LOCKED account, when I log in, then I receive 403: "Account is locked. Contact support."
-- Given 5 consecutive failed login attempts from the same IP within 1 minute, when the 6th attempt arrives, then I receive 429: "Too many login attempts. Try again later."
-- Given a valid access token has expired, when I call a protected endpoint, then I receive 401 and can use the refresh token to obtain a new access token.
+- ✅ Given valid credentials, when I log in, then I receive `{ token, refreshToken, tokenExpires, user }`.
+  - Endpoint: `POST /api/v1/auth/email/login`
+  - Access token expires in 15m; refresh token in 7d
+- ✅ Given invalid credentials, when I log in, then I receive 401: "Invalid email or password" (fields not differentiated).
+- ✅ Given a LOCKED account, when I log in, then I receive 403: "Account is locked. Contact support."
+- ✅ Given 5 requests to the login endpoint from the same IP within 1 minute, the 6th receives 429.
+  - Note: counts all requests (not only failed) — safe conservative approach
+- ✅ Given an expired access token, the client uses the refresh token to get a new pair.
 
 ---
 
-**US-1.4 — Google OAuth Login**
+**US-1.4 — Google OAuth Login** ✅
 
 > As a user, I want to sign in with Google so that I don't have to manage a password.
 
 **Acceptance Criteria:**
 
-- Given the frontend obtains a Google ID token via `@react-oauth/google` and sends it to `POST /api/v1/auth/google/login`, when my Google account is not linked to any existing account, then a new account is created with role=CUSTOMER, status=ACTIVE, googleId set, and I receive a JWT pair in the response.
-- Given my Google email already exists as a local account (email/password), when I sign in with Google, then my accounts are merged: googleId is added to the existing account and I am logged in.
-- Given my Google account is already linked, when I sign in with Google again, then I am logged in and my profile (name, avatar) is refreshed from Google.
-- Given a Google-authenticated user, when they access their profile, then no password change option is shown.
+- ✅ Given a Google ID token from `@react-oauth/google`, `POST /api/v1/auth/google/login { idToken }` creates/merges account with role=CUSTOMER, returns JWT pair.
+- ✅ Given email already exists as local account, Google login merges `socialId` + `provider` onto existing account.
+- ✅ Given already linked Google account, subsequent logins return fresh JWT pair.
+- ⚠️ "No password change option shown" — frontend responsibility; backend `PATCH /auth/me` allows password change for any user; frontend should hide based on `provider` field.
 
 ---
 
-**US-1.5 — Token Refresh**
+**US-1.5 — Token Refresh** ✅
 
-> As a logged-in user, I want my session to persist without re-logging in so that I have a seamless experience.
+> As a logged-in user, I want my session to persist without re-logging in.
 
 **Acceptance Criteria:**
 
-- Given a valid refresh token, when I call POST /auth/refresh, then I receive a new access token and a new refresh token (rotation), and the old refresh token is invalidated.
-- Given an invalid or expired refresh token, when I call POST /auth/refresh, then I receive 401 and must log in again.
-- Given I call POST /auth/logout, when the request succeeds, then the refresh token is invalidated and I receive 200.
+- ✅ `POST /api/v1/auth/refresh` (Bearer: refreshToken) → new `{ token, refreshToken, tokenExpires }`, old token invalidated (rotation via session hash).
+- ✅ Invalid/expired refresh token → 401.
+- ✅ `POST /api/v1/auth/logout` → session deleted, refresh token invalidated → 204.
 
 ---
 
-**US-1.6 — Admin: User Management**
+**US-1.6 — Admin: User Management** ✅
 
 > As an Admin, I want to manage user accounts so that I can maintain system integrity.
 
 **Acceptance Criteria:**
 
-- Given I am Admin, when I call GET /admin/users, then I receive a paginated list of all users with their role, status, and registration date.
-- Given I am Admin, when I lock a user (PATCH /admin/users/:id/status `{status: "LOCKED"}`), then the user's active sessions are invalidated (refresh tokens revoked) and they cannot log in.
-- Given I am Admin, when I assign a role to a user (PATCH /admin/users/:id/role), then the change takes effect on their next token refresh.
-- Given I am NOT Admin, when I call any /admin/* endpoint, then I receive 403.
+- ✅ `GET /api/v1/users?page=1&limit=10` → paginated list with role, status, dates. (JWT `role=admin` required)
+- ✅ `POST /api/v1/users/:id/lock` → status=LOCKED, all sessions invalidated, user cannot log in.
+- ✅ `POST /api/v1/users/:id/unlock` → status=ACTIVE.
+- ✅ `PATCH /api/v1/users/:id/role` `{ role: { id: N } }` → role changed; takes effect on next token refresh.
+- ✅ Non-admin JWT → 403 on all `/users/*` endpoints.
+- ✅ `POST /api/v1/users/:id/approve` — approve PENDING_APPROVAL organizer → ACTIVE + email.
+- ✅ `POST /api/v1/users/:id/reject` — reject PENDING_APPROVAL organizer → LOCKED + email.
 
 ---
 

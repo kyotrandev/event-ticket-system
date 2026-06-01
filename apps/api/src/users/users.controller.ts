@@ -139,6 +139,19 @@ export class UsersController {
   }
 
   @ApiOkResponse({ type: User })
+  @ApiOperation({ summary: 'Change user role (admin only). Takes effect on next token refresh.' })
+  @ApiParam({ name: 'id', type: String, required: true })
+  @SerializeOptions({ groups: ['admin'] })
+  @Patch(':id/role')
+  @HttpCode(HttpStatus.OK)
+  updateRole(
+    @Param('id') id: User['id'],
+    @Body() body: { role: { id: number } },
+  ): Promise<User | null> {
+    return this.usersService.update(id, { role: body.role });
+  }
+
+  @ApiOkResponse({ type: User })
   @ApiOperation({ summary: 'Approve an organizer account (admin only)' })
   @ApiParam({ name: 'id', type: String, required: true })
   @SerializeOptions({ groups: ['admin'] })

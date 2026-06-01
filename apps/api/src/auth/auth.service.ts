@@ -44,11 +44,9 @@ export class AuthService {
     const user = await this.usersService.findByEmail(loginDto.email);
 
     if (!user) {
-      throw new UnprocessableEntityException({
-        status: HttpStatus.UNPROCESSABLE_ENTITY,
-        errors: {
-          email: 'notFound',
-        },
+      throw new UnauthorizedException({
+        status: HttpStatus.UNAUTHORIZED,
+        message: 'Invalid email or password',
       });
     }
 
@@ -82,11 +80,9 @@ export class AuthService {
     }
 
     if (!user.password) {
-      throw new UnprocessableEntityException({
-        status: HttpStatus.UNPROCESSABLE_ENTITY,
-        errors: {
-          password: 'incorrectPassword',
-        },
+      throw new UnauthorizedException({
+        status: HttpStatus.UNAUTHORIZED,
+        message: 'Invalid email or password',
       });
     }
 
@@ -96,11 +92,9 @@ export class AuthService {
     );
 
     if (!isValidPassword) {
-      throw new UnprocessableEntityException({
-        status: HttpStatus.UNPROCESSABLE_ENTITY,
-        errors: {
-          password: 'incorrectPassword',
-        },
+      throw new UnauthorizedException({
+        status: HttpStatus.UNAUTHORIZED,
+        message: 'Invalid email or password',
       });
     }
 
@@ -229,26 +223,29 @@ export class AuthService {
       },
     });
 
-    const hash = await this.jwtService.signAsync(
-      {
-        confirmEmailUserId: user.id,
-      },
-      {
-        secret: this.configService.getOrThrow('auth.confirmEmailSecret', {
-          infer: true,
-        }),
-        expiresIn: this.configService.getOrThrow('auth.confirmEmailExpires', {
-          infer: true,
-        }),
-      },
-    );
+    // Organizers get a pending-review notification; customers get email verification
+    if (!isOrganizer) {
+      const hash = await this.jwtService.signAsync(
+        {
+          confirmEmailUserId: user.id,
+        },
+        {
+          secret: this.configService.getOrThrow('auth.confirmEmailSecret', {
+            infer: true,
+          }),
+          expiresIn: this.configService.getOrThrow('auth.confirmEmailExpires', {
+            infer: true,
+          }),
+        },
+      );
 
-    await this.mailService.userSignUp({
-      to: dto.email,
-      data: {
-        hash,
-      },
-    });
+      await this.mailService.userSignUp({
+        to: dto.email,
+        data: {
+          hash,
+        },
+      });
+    }
   }
 
   async confirmEmail(hash: string): Promise<void> {
@@ -275,10 +272,19 @@ export class AuthService {
 
     const user = await this.usersService.findById(userId);
 
-    if (
-      !user ||
-      user?.status?.id?.toString() !== StatusEnum.inactive.toString()
-    ) {
+    if (!user) {
+      throw new NotFoundException({
+        status: HttpStatus.NOT_FOUND,
+        error: `notFound`,
+      });
+    }
+
+    // Already active (CUSTOMER, advisory verification) — idempotent success
+    if (user.status?.id === StatusEnum.active) {
+      return;
+    }
+
+    if (user.status?.id !== StatusEnum.inactive) {
       throw new NotFoundException({
         status: HttpStatus.NOT_FOUND,
         error: `notFound`,

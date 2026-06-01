@@ -3,6 +3,4 @@ export enum RoleEnum {
   'customer' = 2,
   'organizer' = 3,
   'staff' = 4,
-  // backward-compat alias
-  'user' = 2,
 }
