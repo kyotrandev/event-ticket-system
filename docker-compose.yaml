@@ -1,0 +1,68 @@
+services:
+  postgres:
+    image: postgres:17.9-alpine
+    ports:
+      - ${DATABASE_PORT:-5432}:5432
+    volumes:
+      - event-ticket-db:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: ${DATABASE_USERNAME:-root}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-secret}
+      POSTGRES_DB: ${DATABASE_NAME:-event_ticket_db}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME:-root}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - ${REDIS_PORT:-6379}:6379
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  maildev:
+    build:
+      context: ./apps/api
+      dockerfile: maildev.Dockerfile
+    ports:
+      - ${MAIL_CLIENT_PORT:-1080}:1080
+      - ${MAIL_PORT:-1025}:1025
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
+
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    ports:
+      - ${APP_PORT:-3000}:${APP_PORT:-3000}
+    env_file:
+      - ./apps/api/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    ports:
+      - ${WEB_PORT:-3001}:3000
+    env_file:
+      - ./apps/web/.env.local
+    depends_on:
+      - api
+
+volumes:
+  event-ticket-db:

@@ -233,7 +233,7 @@ WAITING ──(ticket available)──► NOTIFIED ──(user books within 48h)
 
 **Acceptance Criteria:**
 
-- Given I click "Sign in with Google" and complete Google's consent flow, when my Google account is not linked to any existing account, then a new account is created with role=CUSTOMER, status=ACTIVE, googleId set, and I am logged in.
+- Given the frontend obtains a Google ID token via `@react-oauth/google` and sends it to `POST /api/v1/auth/google/login`, when my Google account is not linked to any existing account, then a new account is created with role=CUSTOMER, status=ACTIVE, googleId set, and I receive a JWT pair in the response.
 - Given my Google email already exists as a local account (email/password), when I sign in with Google, then my accounts are merged: googleId is added to the existing account and I am logged in.
 - Given my Google account is already linked, when I sign in with Google again, then I am logged in and my profile (name, avatar) is refreshed from Google.
 - Given a Google-authenticated user, when they access their profile, then no password change option is shown.
@@ -765,8 +765,7 @@ POST /auth/register
 POST /auth/login
 POST /auth/refresh
 POST /auth/logout
-GET  /auth/google
-GET  /auth/google/callback
+POST /auth/google/login         # token-exchange: frontend sends Google ID token, gets JWT pair
 POST /promo-codes/validate     # { code, amount } → discount
 POST /payments/webhook         # Stripe (verified by signature)
 ```
