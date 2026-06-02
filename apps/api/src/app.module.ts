@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { UsersModule } from './users/users.module';
+import { EventsModule } from './events/events.module';
+import { TicketTypesModule } from './ticket-types/ticket-types.module';
 import { FilesModule } from './files/files.module';
 import { AuthModule } from './auth/auth.module';
 import databaseConfig from './database/config/database.config';
@@ -87,6 +89,8 @@ const infrastructureDatabaseModule = (databaseConfig() as DatabaseConfig)
       inject: [ConfigService],
     }),
     UsersModule,
+    EventsModule,
+    TicketTypesModule,
     FilesModule,
     AuthModule,
     AuthFacebookModule,
