@@ -6,13 +6,13 @@ Full-stack web application for the complete event ticketing lifecycle: creation 
 
 | Phase | Status |
 |---|---|
-| Authentication & User Management | ✅ Boilerplate ready |
-| Event & Ticket Type Management | 🔄 Phase 2 |
-| Booking & Payment (Stripe) | 🔄 Phase 3 |
-| QR Check-In System | 🔄 Phase 4 |
-| Cancellation, Refund & Waitlist | 🔄 Phase 5 |
-| Analytics & Admin Panel | 🔄 Phase 6 |
-| Infrastructure & DevOps | 🔄 Phase 7 |
+| Authentication & User Management | ✅ Done (Phase 1) |
+| Event & Ticket Type Management | ✅ Done — API + web browse/detail (Phase 2) |
+| Booking & Payment (Stripe) | 🔄 Phase 3 — next |
+| QR Check-In System | ⬜ Phase 4 |
+| Cancellation, Refund & Waitlist | ⬜ Phase 5 |
+| Analytics & Admin Panel | ⬜ Phase 6 |
+| Infrastructure & DevOps | 🔄 Phase 7 — CI (lint/build/docker) green; tests pending |
 
 ## Tech Stack
 
