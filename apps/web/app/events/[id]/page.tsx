@@ -103,7 +103,7 @@ export default function EventDetailPage({
         )}
       </div>
 
-      {event.status === 'CANCELLED' && (
+      {event.status === 'cancelled' && (
         <div className="border-destructive/40 bg-destructive/10 text-destructive mb-6 rounded-md border px-4 py-3 text-sm">
           This event has been cancelled.
         </div>
@@ -147,8 +147,8 @@ export default function EventDetailPage({
         <div className="space-y-3">
           {tickets.map((t) => {
             const left = remaining(t);
-            const soldOut = t.status === 'SOLD_OUT' || left === 0;
-            const closed = t.status === 'CLOSED';
+            const soldOut = t.status === 'sold_out' || left === 0;
+            const closed = t.status === 'closed';
             return (
               <Card key={t.id}>
                 <CardHeader>

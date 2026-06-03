@@ -32,7 +32,7 @@ export function EventCard({ event }: { event: EventModel }) {
         <CardHeader>
           <div className="mb-1 flex items-center gap-2">
             <Badge variant="secondary">{event.category}</Badge>
-            {event.status === 'ONGOING' && <Badge>Live now</Badge>}
+            {event.status === 'ongoing' && <Badge>Live now</Badge>}
           </div>
           <CardTitle className="line-clamp-2">{event.name}</CardTitle>
         </CardHeader>

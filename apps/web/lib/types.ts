@@ -43,12 +43,13 @@ export interface LoginResponse {
   user: User;
 }
 
+// Backend serializes enum *values*, which are lowercase.
 export type EventStatus =
-  | 'DRAFT'
-  | 'PUBLISHED'
-  | 'ONGOING'
-  | 'ENDED'
-  | 'CANCELLED';
+  | 'draft'
+  | 'published'
+  | 'ongoing'
+  | 'ended'
+  | 'cancelled';
 
 export interface EventModel {
   id: string;
@@ -69,7 +70,7 @@ export interface EventModel {
   deletedAt: string | null;
 }
 
-export type TicketTypeStatus = 'AVAILABLE' | 'SOLD_OUT' | 'CLOSED';
+export type TicketTypeStatus = 'available' | 'sold_out' | 'closed';
 
 export interface TicketType {
   id: string;
