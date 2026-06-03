@@ -2,6 +2,7 @@ export enum FileDriver {
   LOCAL = 'local',
   S3 = 's3',
   S3_PRESIGNED = 's3-presigned',
+  CLOUDINARY = 'cloudinary',
 }
 
 export type FileConfig = {
@@ -10,5 +11,8 @@ export type FileConfig = {
   secretAccessKey?: string;
   awsDefaultS3Bucket?: string;
   awsS3Region?: string;
+  cloudinaryCloudName?: string;
+  cloudinaryApiKey?: string;
+  cloudinaryApiSecret?: string;
   maxFileSize: number;
 };
