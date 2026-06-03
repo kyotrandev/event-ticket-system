@@ -74,5 +74,35 @@ export class UserSeedService {
         }),
       );
     }
+
+    const countOrganizer = await this.repository.count({
+      where: {
+        role: {
+          id: RoleEnum.organizer,
+        },
+      },
+    });
+
+    if (!countOrganizer) {
+      const salt = await bcrypt.genSalt();
+      const password = await bcrypt.hash('secret', salt);
+
+      await this.repository.save(
+        this.repository.create({
+          firstName: 'Olivia',
+          lastName: 'Organizer',
+          email: 'organizer@example.com',
+          password,
+          role: {
+            id: RoleEnum.organizer,
+            name: 'Organizer',
+          },
+          status: {
+            id: StatusEnum.active,
+            name: 'Active',
+          },
+        }),
+      );
+    }
   }
 }
