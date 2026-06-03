@@ -14,9 +14,7 @@ import { QueryEventDto } from './dto/query-event.dto';
 import { UpdateEventStatusDto } from './dto/update-event-status.dto';
 import { EventStatusEnum } from './event-status.enum';
 import { NullableType } from '../utils/types/nullable.type';
-import {
-  InfinityPaginationResponseDto,
-} from '../utils/dto/infinity-pagination-response.dto';
+import { InfinityPaginationResponseDto } from '../utils/dto/infinity-pagination-response.dto';
 import { infinityPagination } from '../utils/infinity-pagination';
 
 @Injectable()
@@ -174,17 +172,26 @@ export class EventsService {
         throw new UnprocessableEntityException({
           status: HttpStatus.UNPROCESSABLE_ENTITY,
           errors: {
-            ticketTypes: 'Cannot publish event without at least one ticket type',
+            ticketTypes:
+              'Cannot publish event without at least one ticket type',
           },
         });
       }
     }
 
     // Only allow valid transitions
-    const validTransitions: Partial<Record<EventStatusEnum, EventStatusEnum[]>> = {
+    const validTransitions: Partial<
+      Record<EventStatusEnum, EventStatusEnum[]>
+    > = {
       [EventStatusEnum.DRAFT]: [EventStatusEnum.PUBLISHED],
-      [EventStatusEnum.PUBLISHED]: [EventStatusEnum.ONGOING, EventStatusEnum.CANCELLED],
-      [EventStatusEnum.ONGOING]: [EventStatusEnum.ENDED, EventStatusEnum.CANCELLED],
+      [EventStatusEnum.PUBLISHED]: [
+        EventStatusEnum.ONGOING,
+        EventStatusEnum.CANCELLED,
+      ],
+      [EventStatusEnum.ONGOING]: [
+        EventStatusEnum.ENDED,
+        EventStatusEnum.CANCELLED,
+      ],
     };
 
     const allowed = validTransitions[currentStatus] ?? [];
@@ -198,7 +205,11 @@ export class EventsService {
     return this.eventRepository.updateStatus(id, newStatus);
   }
 
-  async remove(id: string, organizerId: string, isAdmin: boolean): Promise<void> {
+  async remove(
+    id: string,
+    organizerId: string,
+    isAdmin: boolean,
+  ): Promise<void> {
     const event = await this.eventRepository.findById(id);
     if (!event) {
       throw new NotFoundException({

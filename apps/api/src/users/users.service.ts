@@ -296,7 +296,10 @@ export class UsersService {
     const user = await this.usersRepository.findById(id);
 
     if (!user) {
-      throw new NotFoundException({ status: HttpStatus.NOT_FOUND, error: 'notFound' });
+      throw new NotFoundException({
+        status: HttpStatus.NOT_FOUND,
+        error: 'notFound',
+      });
     }
 
     if (user.status?.id !== StatusEnum.pending_approval) {
@@ -322,7 +325,10 @@ export class UsersService {
     const user = await this.usersRepository.findById(id);
 
     if (!user) {
-      throw new NotFoundException({ status: HttpStatus.NOT_FOUND, error: 'notFound' });
+      throw new NotFoundException({
+        status: HttpStatus.NOT_FOUND,
+        error: 'notFound',
+      });
     }
 
     if (user.status?.id !== StatusEnum.pending_approval) {
@@ -348,7 +354,10 @@ export class UsersService {
     const user = await this.usersRepository.findById(id);
 
     if (!user) {
-      throw new NotFoundException({ status: HttpStatus.NOT_FOUND, error: 'notFound' });
+      throw new NotFoundException({
+        status: HttpStatus.NOT_FOUND,
+        error: 'notFound',
+      });
     }
 
     const updated = await this.usersRepository.update(id, {
@@ -364,7 +373,10 @@ export class UsersService {
     const user = await this.usersRepository.findById(id);
 
     if (!user) {
-      throw new NotFoundException({ status: HttpStatus.NOT_FOUND, error: 'notFound' });
+      throw new NotFoundException({
+        status: HttpStatus.NOT_FOUND,
+        error: 'notFound',
+      });
     }
 
     const updated = await this.usersRepository.update(id, {

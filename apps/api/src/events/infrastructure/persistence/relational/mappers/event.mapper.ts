@@ -37,7 +37,8 @@ export class EventMapper {
     persistenceEntity.startTime = domainEntity.startTime;
     persistenceEntity.endTime = domainEntity.endTime;
     persistenceEntity.bannerUrl = domainEntity.bannerUrl;
-    persistenceEntity.cancellationWindowHours = domainEntity.cancellationWindowHours;
+    persistenceEntity.cancellationWindowHours =
+      domainEntity.cancellationWindowHours;
     persistenceEntity.maxTicketsPerOrder = domainEntity.maxTicketsPerOrder;
     persistenceEntity.status = domainEntity.status;
     persistenceEntity.createdAt = domainEntity.createdAt;

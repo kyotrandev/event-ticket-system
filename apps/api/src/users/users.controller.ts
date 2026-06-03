@@ -139,7 +139,10 @@ export class UsersController {
   }
 
   @ApiOkResponse({ type: User })
-  @ApiOperation({ summary: 'Change user role (admin only). Takes effect on next token refresh.' })
+  @ApiOperation({
+    summary:
+      'Change user role (admin only). Takes effect on next token refresh.',
+  })
   @ApiParam({ name: 'id', type: String, required: true })
   @SerializeOptions({ groups: ['admin'] })
   @Patch(':id/role')
@@ -172,7 +175,9 @@ export class UsersController {
   }
 
   @ApiOkResponse({ type: User })
-  @ApiOperation({ summary: 'Lock a user account and invalidate all sessions (admin only)' })
+  @ApiOperation({
+    summary: 'Lock a user account and invalidate all sessions (admin only)',
+  })
   @ApiParam({ name: 'id', type: String, required: true })
   @SerializeOptions({ groups: ['admin'] })
   @Post(':id/lock')

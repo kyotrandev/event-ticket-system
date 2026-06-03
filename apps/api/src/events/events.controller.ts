@@ -124,7 +124,12 @@ export class EventsController {
     @Request() req: { user: JwtPayloadType },
   ): Promise<Event> {
     const isAdmin = req.user.role?.id === RoleEnum.admin;
-    return this.eventsService.updateStatus(id, String(req.user.id), dto, isAdmin);
+    return this.eventsService.updateStatus(
+      id,
+      String(req.user.id),
+      dto,
+      isAdmin,
+    );
   }
 
   @ApiBearerAuth()

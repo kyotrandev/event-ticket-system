@@ -167,9 +167,12 @@ export class MailService {
     });
   }
 
-  async organizerApproved(mailData: MailData<{ firstName: string }>): Promise<void> {
+  async organizerApproved(
+    mailData: MailData<{ firstName: string }>,
+  ): Promise<void> {
     const loginUrl = new URL(
-      this.configService.getOrThrow('app.frontendDomain', { infer: true }) + '/login',
+      this.configService.getOrThrow('app.frontendDomain', { infer: true }) +
+        '/login',
     );
 
     await this.mailerService.sendMail({
@@ -191,7 +194,9 @@ export class MailService {
     });
   }
 
-  async organizerRejected(mailData: MailData<{ firstName: string }>): Promise<void> {
+  async organizerRejected(
+    mailData: MailData<{ firstName: string }>,
+  ): Promise<void> {
     await this.mailerService.sendMail({
       to: mailData.to,
       subject: 'Update on your organizer application',

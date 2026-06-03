@@ -19,8 +19,12 @@ export class AuthRegisterLoginDto {
 
   @ApiProperty({ minLength: 8 })
   @MinLength(8)
-  @Matches(/(?=.*[A-Z])/, { message: 'password must contain at least 1 uppercase letter' })
-  @Matches(/(?=.*[0-9])/, { message: 'password must contain at least 1 number' })
+  @Matches(/(?=.*[A-Z])/, {
+    message: 'password must contain at least 1 uppercase letter',
+  })
+  @Matches(/(?=.*[0-9])/, {
+    message: 'password must contain at least 1 number',
+  })
   password: string;
 
   @ApiProperty({ example: 'John' })

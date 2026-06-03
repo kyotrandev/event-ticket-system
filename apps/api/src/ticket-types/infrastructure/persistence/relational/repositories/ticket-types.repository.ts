@@ -36,7 +36,10 @@ export class TicketTypesRelationalRepository implements TicketTypeRepository {
     return entity ? TicketTypeMapper.toDomain(entity) : null;
   }
 
-  async update(id: string, payload: DeepPartial<TicketType>): Promise<TicketType> {
+  async update(
+    id: string,
+    payload: DeepPartial<TicketType>,
+  ): Promise<TicketType> {
     const entity = await this.ticketTypesRepository.findOne({ where: { id } });
     if (!entity) {
       throw new Error('TicketType not found');

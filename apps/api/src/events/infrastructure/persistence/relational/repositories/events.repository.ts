@@ -10,7 +10,10 @@ import {
 import { EventEntity } from '../entities/event.entity';
 import { TicketTypeEntity } from '../../../../../ticket-types/infrastructure/persistence/relational/entities/ticket-type.entity';
 import { Event } from '../../../../domain/event';
-import { EventRepository, FindPublishedOptions } from '../../../../events.repository';
+import {
+  EventRepository,
+  FindPublishedOptions,
+} from '../../../../events.repository';
 import { EventMapper } from '../mappers/event.mapper';
 import { NullableType } from '../../../../../utils/types/nullable.type';
 import { DeepPartial } from '../../../../../utils/types/deep-partial.type';
@@ -59,8 +62,12 @@ export class EventsRelationalRepository implements EventRepository {
     }
 
     if (options.dateFrom) {
-      publishedWhere.startTime = MoreThanOrEqual(new Date(options.dateFrom)) as any;
-      ongoingWhere.startTime = MoreThanOrEqual(new Date(options.dateFrom)) as any;
+      publishedWhere.startTime = MoreThanOrEqual(
+        new Date(options.dateFrom),
+      ) as any;
+      ongoingWhere.startTime = MoreThanOrEqual(
+        new Date(options.dateFrom),
+      ) as any;
     }
 
     if (options.dateTo) {
@@ -79,17 +86,17 @@ export class EventsRelationalRepository implements EventRepository {
       const keyword = options.keyword;
       const qb = this.eventsRepository
         .createQueryBuilder('event')
-        .where(
-          'event.status IN (:...statuses)',
-          { statuses: [EventStatusEnum.PUBLISHED, EventStatusEnum.ONGOING] },
-        )
-        .andWhere(
-          '(event.name ILIKE :kw OR event.description ILIKE :kw)',
-          { kw: `%${keyword}%` },
-        );
+        .where('event.status IN (:...statuses)', {
+          statuses: [EventStatusEnum.PUBLISHED, EventStatusEnum.ONGOING],
+        })
+        .andWhere('(event.name ILIKE :kw OR event.description ILIKE :kw)', {
+          kw: `%${keyword}%`,
+        });
 
       if (options.category) {
-        qb.andWhere('event.category = :category', { category: options.category });
+        qb.andWhere('event.category = :category', {
+          category: options.category,
+        });
       }
       if (options.location) {
         qb.andWhere('event.location ILIKE :location', {
