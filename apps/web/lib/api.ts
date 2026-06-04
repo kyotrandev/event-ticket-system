@@ -167,3 +167,36 @@ export const authApi = {
   }) => api.post<void>('/auth/email/register', data, false),
   logout: () => api.post<void>('/auth/logout'),
 };
+
+// --- Booking endpoints ---
+import type {
+  Booking,
+  CreateIntentResponse,
+  Ticket,
+} from './types';
+
+export const bookingApi = {
+  create: (items: { ticketTypeId: string; quantity: number }[], promoCode?: string) =>
+    api.post<Booking>('/bookings', { items, ...(promoCode ? { promoCode } : {}) }),
+  findMine: () => api.get<Booking[]>('/bookings/me'),
+  findById: (id: string) => api.get<Booking>(`/bookings/${id}`),
+};
+
+export const paymentApi = {
+  createIntent: (bookingId: string) =>
+    api.post<CreateIntentResponse>(`/payments/intent/${bookingId}`),
+};
+
+export const ticketApi = {
+  findMine: () => api.get<Ticket[]>('/tickets/me'),
+  getQrBlob: async (code: string): Promise<string> => {
+    const token = tokenStore.get();
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000/api/v1'}/tickets/${code}/qr`,
+      token ? { headers: { Authorization: `Bearer ${token}` } } : {},
+    );
+    if (!res.ok) throw new Error('QR fetch failed');
+    const blob = await res.blob();
+    return URL.createObjectURL(blob);
+  },
+};

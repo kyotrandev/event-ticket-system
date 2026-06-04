@@ -51,6 +51,12 @@ export function SiteHeader() {
 
           {loading ? null : user ? (
             <>
+              <Link
+                href="/my-tickets"
+                className={buttonVariants({ variant: 'ghost', size: 'sm' })}
+              >
+                My tickets
+              </Link>
               <span className="text-muted-foreground hidden text-sm sm:inline">
                 {user.firstName ?? user.email}
               </span>

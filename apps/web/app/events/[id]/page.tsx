@@ -1,8 +1,11 @@
 'use client';
 
 import { use, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { CalendarDays, MapPin, Tag } from 'lucide-react';
-import { api, ApiError } from '@/lib/api';
+import { toast } from 'sonner';
+import { api, ApiError, bookingApi } from '@/lib/api';
+import { useAuth } from '@/lib/auth-context';
 import type { EventModel, TicketType } from '@/lib/types';
 import { formatDateTime } from '@/components/event-card';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +17,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 function formatVnd(amount: number): string {
   return amount === 0
@@ -34,10 +39,18 @@ export default function EventDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const router = useRouter();
+  const { user } = useAuth();
+
   const [event, setEvent] = useState<EventModel | null>(null);
   const [tickets, setTickets] = useState<TicketType[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+
+  // qty map: ticketTypeId → quantity
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const [promoCode, setPromoCode] = useState('');
+  const [booking, setBooking] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -46,16 +59,9 @@ export default function EventDetailPage({
       try {
         const ev = await api.get<EventModel>(`/events/${id}`, undefined, false);
         if (cancelled) return;
-        if (!ev) {
-          setNotFound(true);
-          return;
-        }
+        if (!ev) { setNotFound(true); return; }
         setEvent(ev);
-        const tt = await api.get<TicketType[]>(
-          `/events/${id}/ticket-types`,
-          undefined,
-          false,
-        );
+        const tt = await api.get<TicketType[]>(`/events/${id}/ticket-types`, undefined, false);
         if (!cancelled) setTickets(tt ?? []);
       } catch (err) {
         if (!cancelled && err instanceof ApiError && err.status === 404) {
@@ -65,10 +71,32 @@ export default function EventDetailPage({
         if (!cancelled) setLoading(false);
       }
     })();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [id]);
+
+  const subtotal = tickets.reduce((sum, t) => {
+    const qty = quantities[t.id] ?? 0;
+    return sum + qty * t.price;
+  }, 0);
+
+  const hasItems = Object.values(quantities).some((q) => q > 0);
+
+  async function handleBook() {
+    if (!user) { router.push('/login'); return; }
+    const items = Object.entries(quantities)
+      .filter(([, qty]) => qty > 0)
+      .map(([ticketTypeId, quantity]) => ({ ticketTypeId, quantity }));
+    if (!items.length) return;
+
+    setBooking(true);
+    try {
+      const b = await bookingApi.create(items, promoCode || undefined);
+      router.push(`/bookings/${b.id}/pay`);
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Booking failed');
+      setBooking(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -85,6 +113,9 @@ export default function EventDetailPage({
       </div>
     );
   }
+
+  const eventActive =
+    event.status === 'published' || event.status === 'ongoing';
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
@@ -140,15 +171,17 @@ export default function EventDetailPage({
 
       <h2 className="mb-4 text-xl font-semibold">Tickets</h2>
       {tickets.length === 0 ? (
-        <p className="text-muted-foreground">
-          No ticket types are available yet.
-        </p>
+        <p className="text-muted-foreground">No ticket types are available yet.</p>
       ) : (
         <div className="space-y-3">
           {tickets.map((t) => {
             const left = remaining(t);
             const soldOut = t.status === 'sold_out' || left === 0;
             const closed = t.status === 'closed';
+            const upcoming = t.status === 'upcoming';
+            const purchasable = eventActive && !soldOut && !closed && !upcoming;
+            const qty = quantities[t.id] ?? 0;
+
             return (
               <Card key={t.id}>
                 <CardHeader>
@@ -160,23 +193,117 @@ export default function EventDetailPage({
                           ? 'Sold out'
                           : closed
                             ? 'Sales closed'
-                            : `${left} remaining`}
+                            : upcoming
+                              ? `Sales open ${new Date(t.saleStart).toLocaleDateString('vi-VN')}`
+                              : `${left} remaining`}
                       </CardDescription>
                     </div>
-                    <div className="text-lg font-semibold">
-                      {formatVnd(t.price)}
-                    </div>
+                    <div className="text-lg font-semibold">{formatVnd(t.price)}</div>
                   </div>
                 </CardHeader>
-                <CardContent>
-                  {/* Booking flow is delivered in Phase 3. */}
-                  <Button disabled={soldOut || closed} title="Booking coming soon">
-                    {soldOut ? 'Sold out' : closed ? 'Closed' : 'Book (soon)'}
-                  </Button>
-                </CardContent>
+                {purchasable && (
+                  <CardContent>
+                    <div className="flex items-center gap-3">
+                      <Label htmlFor={`qty-${t.id}`} className="shrink-0">
+                        Qty
+                      </Label>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                          onClick={() =>
+                            setQuantities((q) => ({
+                              ...q,
+                              [t.id]: Math.max(0, (q[t.id] ?? 0) - 1),
+                            }))
+                          }
+                          disabled={qty === 0}
+                        >
+                          −
+                        </Button>
+                        <Input
+                          id={`qty-${t.id}`}
+                          type="number"
+                          min={0}
+                          max={Math.min(left, event.maxTicketsPerOrder)}
+                          value={qty}
+                          onChange={(e) =>
+                            setQuantities((q) => ({
+                              ...q,
+                              [t.id]: Math.max(
+                                0,
+                                Math.min(
+                                  Number(e.target.value),
+                                  left,
+                                  event.maxTicketsPerOrder,
+                                ),
+                              ),
+                            }))
+                          }
+                          className="h-8 w-16 text-center"
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                          onClick={() =>
+                            setQuantities((q) => ({
+                              ...q,
+                              [t.id]: Math.min(
+                                (q[t.id] ?? 0) + 1,
+                                left,
+                                event.maxTicketsPerOrder,
+                              ),
+                            }))
+                          }
+                          disabled={qty >= Math.min(left, event.maxTicketsPerOrder)}
+                        >
+                          +
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                )}
               </Card>
             );
           })}
+
+          {/* Booking form footer */}
+          {eventActive && tickets.some((t) => t.status === 'available') && (
+            <div className="mt-6 space-y-4 rounded-lg border p-4">
+              <div className="flex items-center gap-3">
+                <Label htmlFor="promo" className="shrink-0">
+                  Promo code
+                </Label>
+                <Input
+                  id="promo"
+                  placeholder="Optional"
+                  value={promoCode}
+                  onChange={(e) => setPromoCode(e.target.value)}
+                  className="max-w-48"
+                />
+              </div>
+
+              {subtotal > 0 && (
+                <p className="text-muted-foreground text-sm">
+                  Subtotal: <span className="font-semibold text-foreground">{formatVnd(subtotal)}</span>
+                </p>
+              )}
+
+              <Button
+                onClick={handleBook}
+                disabled={!hasItems || booking}
+                className="w-full sm:w-auto"
+              >
+                {booking
+                  ? 'Creating booking…'
+                  : user
+                    ? 'Book tickets'
+                    : 'Log in to book'}
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </div>
