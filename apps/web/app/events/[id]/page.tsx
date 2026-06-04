@@ -149,6 +149,7 @@ export default function EventDetailPage({
             const left = remaining(t);
             const soldOut = t.status === 'sold_out' || left === 0;
             const closed = t.status === 'closed';
+            const upcoming = t.status === 'upcoming';
             return (
               <Card key={t.id}>
                 <CardHeader>
@@ -160,7 +161,9 @@ export default function EventDetailPage({
                           ? 'Sold out'
                           : closed
                             ? 'Sales closed'
-                            : `${left} remaining`}
+                            : upcoming
+                              ? `Sales open ${new Date(t.saleStart).toLocaleDateString('vi-VN')}`
+                              : `${left} remaining`}
                       </CardDescription>
                     </div>
                     <div className="text-lg font-semibold">
@@ -170,8 +173,8 @@ export default function EventDetailPage({
                 </CardHeader>
                 <CardContent>
                   {/* Booking flow is delivered in Phase 3. */}
-                  <Button disabled={soldOut || closed} title="Booking coming soon">
-                    {soldOut ? 'Sold out' : closed ? 'Closed' : 'Book (soon)'}
+                  <Button disabled={soldOut || closed || upcoming} title="Booking coming soon">
+                    {soldOut ? 'Sold out' : closed ? 'Closed' : upcoming ? 'Not yet on sale' : 'Book (soon)'}
                   </Button>
                 </CardContent>
               </Card>

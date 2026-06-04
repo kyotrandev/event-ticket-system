@@ -14,6 +14,20 @@ import { UpdateTicketTypeDto } from './dto/update-ticket-type.dto';
 import { TicketTypeStatusEnum } from './ticket-type-status.enum';
 import { NullableType } from '../utils/types/nullable.type';
 
+function computeEffectiveStatus(
+  tt: TicketType,
+  now: Date,
+): TicketTypeStatusEnum {
+  if (tt.soldQty >= tt.totalQty) return TicketTypeStatusEnum.SOLD_OUT;
+  if (tt.status === TicketTypeStatusEnum.SOLD_OUT)
+    return TicketTypeStatusEnum.SOLD_OUT;
+  if (tt.saleStart > now) return TicketTypeStatusEnum.UPCOMING;
+  if (tt.saleEnd < now) return TicketTypeStatusEnum.CLOSED;
+  return tt.status === TicketTypeStatusEnum.CLOSED
+    ? TicketTypeStatusEnum.CLOSED
+    : TicketTypeStatusEnum.AVAILABLE;
+}
+
 @Injectable()
 export class TicketTypesService {
   constructor(
@@ -41,8 +55,16 @@ export class TicketTypesService {
       });
     }
 
+    const saleStart = new Date(dto.saleStart);
     const saleEnd = new Date(dto.saleEnd);
     const startTime = event.startTime;
+
+    if (saleStart >= saleEnd) {
+      throw new UnprocessableEntityException({
+        status: HttpStatus.UNPROCESSABLE_ENTITY,
+        errors: { saleStart: 'saleStart must be before saleEnd' },
+      });
+    }
 
     if (saleEnd >= startTime) {
       throw new UnprocessableEntityException({
@@ -53,25 +75,34 @@ export class TicketTypesService {
       });
     }
 
-    return this.ticketTypeRepository.create({
+    const tt = await this.ticketTypeRepository.create({
       eventId,
       name: dto.name,
       price: dto.price,
       totalQty: dto.totalQty,
       soldQty: 0,
       reservedQty: 0,
-      saleStart: new Date(dto.saleStart),
+      saleStart,
       saleEnd,
       status: TicketTypeStatusEnum.AVAILABLE,
     });
+    tt.status = computeEffectiveStatus(tt, new Date());
+    return tt;
   }
 
   async findByEvent(eventId: string): Promise<TicketType[]> {
-    return this.ticketTypeRepository.findByEvent(eventId);
+    const now = new Date();
+    const types = await this.ticketTypeRepository.findByEvent(eventId);
+    return types.map((tt) => {
+      tt.status = computeEffectiveStatus(tt, now);
+      return tt;
+    });
   }
 
   async findById(id: string): Promise<NullableType<TicketType>> {
-    return this.ticketTypeRepository.findById(id);
+    const tt = await this.ticketTypeRepository.findById(id);
+    if (tt) tt.status = computeEffectiveStatus(tt, new Date());
+    return tt;
   }
 
   async update(
@@ -121,10 +152,24 @@ export class TicketTypesService {
       });
     }
 
+    // Validate saleStart < saleEnd using merged values
+    const resolvedSaleStart = dto.saleStart
+      ? new Date(dto.saleStart)
+      : ticketType.saleStart;
+    const resolvedSaleEnd = dto.saleEnd
+      ? new Date(dto.saleEnd)
+      : ticketType.saleEnd;
+    if (resolvedSaleStart >= resolvedSaleEnd) {
+      throw new UnprocessableEntityException({
+        status: HttpStatus.UNPROCESSABLE_ENTITY,
+        errors: { saleStart: 'saleStart must be before saleEnd' },
+      });
+    }
+
     const newTotalQty = dto.totalQty ?? ticketType.totalQty;
     const newSoldQty = ticketType.soldQty;
 
-    // Auto-set SOLD_OUT if soldQty === totalQty
+    // Store AVAILABLE or SOLD_OUT; effective status computed at read time
     let newStatus = ticketType.status;
     if (newSoldQty >= newTotalQty) {
       newStatus = TicketTypeStatusEnum.SOLD_OUT;
@@ -139,7 +184,9 @@ export class TicketTypesService {
       status: newStatus,
     };
 
-    return this.ticketTypeRepository.update(id, payload);
+    const updated = await this.ticketTypeRepository.update(id, payload);
+    updated.status = computeEffectiveStatus(updated, new Date());
+    return updated;
   }
 
   async remove(

@@ -70,7 +70,7 @@ export interface EventModel {
   deletedAt: string | null;
 }
 
-export type TicketTypeStatus = 'available' | 'sold_out' | 'closed';
+export type TicketTypeStatus = 'available' | 'upcoming' | 'sold_out' | 'closed';
 
 export interface TicketType {
   id: string;
