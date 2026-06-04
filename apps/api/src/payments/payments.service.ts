@@ -253,20 +253,23 @@ export class PaymentsService {
         return { paymentId: payment.id, fulfilled: false };
       }
 
-      // Shift inventory: reserved → sold, deterministic lock order.
+      // Shift inventory reserved → sold. Rows are locked with the IDENTICAL
+      // statement bookings.create() uses (same statement → same plan → same
+      // lock acquisition order = deadlock-free across all paths).
       const items = await manager.find(BookingItemEntity, {
         where: { bookingId: booking.id },
         loadEagerRelations: false,
       });
-      const sorted = [...items].sort((a, b) =>
-        a.ticketTypeId.localeCompare(b.ticketTypeId),
-      );
-      for (const item of sorted) {
-        const tt = await manager
-          .createQueryBuilder(TicketTypeEntity, 'tt')
-          .setLock('pessimistic_write')
-          .where('tt.id = :id', { id: item.ticketTypeId })
-          .getOne();
+      const ids = [...new Set(items.map((i) => i.ticketTypeId))].sort();
+      const lockedTypes = await manager
+        .createQueryBuilder(TicketTypeEntity, 'tt')
+        .setLock('pessimistic_write')
+        .where('tt.id IN (:...ids)', { ids })
+        .orderBy('tt.id', 'ASC')
+        .getMany();
+      const typeById = new Map(lockedTypes.map((tt) => [tt.id, tt]));
+      for (const item of items) {
+        const tt = typeById.get(item.ticketTypeId);
         if (!tt) continue;
         await manager.update(TicketTypeEntity, item.ticketTypeId, {
           soldQty: tt.soldQty + item.quantity,
@@ -367,15 +370,15 @@ export class PaymentsService {
         where: { bookingId: booking.id },
         loadEagerRelations: false,
       });
-      const sorted = [...items].sort((a, b) =>
-        a.ticketTypeId.localeCompare(b.ticketTypeId),
-      );
-      for (const item of sorted) {
-        await manager
-          .createQueryBuilder(TicketTypeEntity, 'tt')
-          .setLock('pessimistic_write')
-          .where('tt.id = :id', { id: item.ticketTypeId })
-          .getOne();
+      // Identical locking statement as create()/fulfill() — see fulfill().
+      const ids = [...new Set(items.map((i) => i.ticketTypeId))].sort();
+      await manager
+        .createQueryBuilder(TicketTypeEntity, 'tt')
+        .setLock('pessimistic_write')
+        .where('tt.id IN (:...ids)', { ids })
+        .orderBy('tt.id', 'ASC')
+        .getMany();
+      for (const item of items) {
         await manager.decrement(
           TicketTypeEntity,
           { id: item.ticketTypeId },

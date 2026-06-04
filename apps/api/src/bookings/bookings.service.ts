@@ -220,16 +220,16 @@ export class BookingsService {
         loadEagerRelations: false,
       });
 
-      // Same deterministic lock order as create().
-      const sorted = [...items].sort((a, b) =>
-        a.ticketTypeId.localeCompare(b.ticketTypeId),
-      );
-      for (const item of sorted) {
-        await manager
-          .createQueryBuilder(TicketTypeEntity, 'tt')
-          .setLock('pessimistic_write')
-          .where('tt.id = :id', { id: item.ticketTypeId })
-          .getOne();
+      // Lock all rows with the IDENTICAL statement create() uses — same
+      // statement, same plan, same lock acquisition order = deadlock-free.
+      const ids = [...new Set(items.map((i) => i.ticketTypeId))].sort();
+      await manager
+        .createQueryBuilder(TicketTypeEntity, 'tt')
+        .setLock('pessimistic_write')
+        .where('tt.id IN (:...ids)', { ids })
+        .orderBy('tt.id', 'ASC')
+        .getMany();
+      for (const item of items) {
         await manager.decrement(
           TicketTypeEntity,
           { id: item.ticketTypeId },
