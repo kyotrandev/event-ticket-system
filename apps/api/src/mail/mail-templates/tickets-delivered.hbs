@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Tickets</title>
+</head>
+<body style="margin:0;font-family:arial">
+    <table style="border:0;width:100%">
+        <tr style="background:#eeeeee">
+            <td style="padding:20px;color:#808080;text-align:center;font-size:40px;font-weight:600">
+                {{app_name}}
+            </td>
+        </tr>
+        <tr>
+            <td style="padding:20px;color:#808080;font-size:16px;font-weight:100">
+                Hi {{firstName}},<br><br>
+                Your payment is confirmed — here are your tickets for
+                <strong>{{eventName}}</strong>.<br><br>
+                <strong>When:</strong> {{eventStart}}<br>
+                <strong>Where:</strong> {{eventLocation}}<br><br>
+                Your QR codes are attached to this email. Show them at the gate for entry.
+            </td>
+        </tr>
+        <tr>
+            <td style="padding:0 20px 20px;color:#808080;font-size:14px">
+                <table style="border-collapse:collapse;width:100%">
+                    <tr style="background:#eeeeee">
+                        <th style="padding:8px;text-align:left">Ticket</th>
+                        <th style="padding:8px;text-align:left">Code</th>
+                    </tr>
+                    {{#each tickets}}
+                    <tr>
+                        <td style="padding:8px;border-bottom:1px solid #eeeeee">{{this.typeName}}</td>
+                        <td style="padding:8px;border-bottom:1px solid #eeeeee;font-family:monospace">{{this.code}}</td>
+                    </tr>
+                    {{/each}}
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

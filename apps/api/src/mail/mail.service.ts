@@ -194,6 +194,40 @@ export class MailService {
     });
   }
 
+  async ticketsDelivered(mailData: {
+    to: string;
+    data: {
+      firstName: string;
+      eventName: string;
+      eventLocation: string;
+      eventStart: string;
+      tickets: { code: string; typeName: string }[];
+    };
+    attachments: { filename: string; content: Buffer }[];
+  }): Promise<void> {
+    await this.mailerService.sendMail({
+      to: mailData.to,
+      subject: `Your tickets for ${mailData.data.eventName}`,
+      text: `Your ${mailData.data.tickets.length} ticket(s) for ${mailData.data.eventName} are attached as QR codes. Show them at the gate.`,
+      attachments: mailData.attachments,
+      templatePath: path.join(
+        this.configService.getOrThrow('app.workingDirectory', { infer: true }),
+        'src',
+        'mail',
+        'mail-templates',
+        'tickets-delivered.hbs',
+      ),
+      context: {
+        app_name: this.configService.get('app.name', { infer: true }),
+        firstName: mailData.data.firstName,
+        eventName: mailData.data.eventName,
+        eventLocation: mailData.data.eventLocation,
+        eventStart: mailData.data.eventStart,
+        tickets: mailData.data.tickets,
+      },
+    });
+  }
+
   async organizerRejected(
     mailData: MailData<{ firstName: string }>,
   ): Promise<void> {

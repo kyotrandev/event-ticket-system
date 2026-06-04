@@ -383,6 +383,18 @@ WAITING ──(ticket available)──► NOTIFIED ──(user books within 48h)
 
 ## 6. Phase 3 — Booking & Payment
 
+> **Status: ✅ Implemented (backend)** (commit `feat(api): implement Phase 3`)
+
+### Implementation Notes
+
+- **No-oversell** enforced via one transaction with `FOR UPDATE` row locks on `ticket_type`, acquired in sorted-id order (deadlock-free for multi-item bookings). Verified empirically: 10 concurrent bookings for 1 remaining seat → exactly one 201; DB invariant `soldQty + reservedQty ≤ totalQty` held.
+- **Webhook idempotency** keyed on unique `stripePaymentIntentId` with a locked payment row; duplicate `payment_intent.succeeded` verified to issue tickets exactly once.
+- **VND is zero-decimal in Stripe** — `amount = totalAmount` unscaled (no ×100).
+- **Promo timing decision:** `usedCount` is consumed at *payment success*, not at booking creation, so expired/failed bookings never burn uses (SPEC is ambiguous between US-3.2 and US-3.4). Conditional UPDATE prevents overshooting `maxUses`.
+- **Free/fully-discounted bookings** (`totalAmount = 0`) are fulfilled immediately without Stripe (synthetic `free_*` intent id).
+- **Payment-after-expiry edge:** recorded as `payment.succeeded_after_expiry` in AuditLog for manual refund until Phase 5 automates it.
+- **Deviations:** validation errors return 422 (boilerplate convention) where SPEC says 400; ticket email ships QR PNG attachments — PDF rendering (`@react-pdf/renderer`) deferred within the phase.
+
 ### User Stories
 
 ---

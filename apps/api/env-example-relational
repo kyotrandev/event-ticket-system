@@ -62,3 +62,13 @@ GOOGLE_CLIENT_SECRET=
 APPLE_APP_AUDIENCE=[]
 
 WORKER_HOST=redis://redis:6379/1
+
+REDIS_HOST=localhost
+REDIS_PORT=6379
+
+# Stripe (test mode) — required for Phase 3 payments
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+
+# HMAC secret for ticket QR signatures (falls back to AUTH_JWT_SECRET)
+TICKET_QR_SECRET=

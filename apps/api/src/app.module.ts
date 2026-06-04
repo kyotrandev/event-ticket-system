@@ -12,6 +12,10 @@ import fileConfig from './files/config/file.config';
 import facebookConfig from './auth-facebook/config/facebook.config';
 import googleConfig from './auth-google/config/google.config';
 import appleConfig from './auth-apple/config/apple.config';
+import redisConfig from './queue/config/redis.config';
+import stripeConfig from './payments/config/stripe.config';
+import ticketConfig from './tickets/config/ticket.config';
+import { BullModule } from '@nestjs/bullmq';
 import path from 'path';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -46,9 +50,27 @@ const infrastructureDatabaseModule = (databaseConfig() as DatabaseConfig)
     });
 // </database-block>
 
+import { PromoCodesModule } from './promo-codes/promo-codes.module';
+
+import { BookingsModule } from './bookings/bookings.module';
+
+import { BookingItemsModule } from './booking-items/booking-items.module';
+
+import { TicketsModule } from './tickets/tickets.module';
+
+import { PaymentsModule } from './payments/payments.module';
+
+import { AuditLogsModule } from './audit-logs/audit-logs.module';
+
 @Module({
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
   imports: [
+    AuditLogsModule,
+    PaymentsModule,
+    TicketsModule,
+    BookingItemsModule,
+    BookingsModule,
+    PromoCodesModule,
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
     ConfigModule.forRoot({
       isGlobal: true,
@@ -61,8 +83,21 @@ const infrastructureDatabaseModule = (databaseConfig() as DatabaseConfig)
         facebookConfig,
         googleConfig,
         appleConfig,
+        redisConfig,
+        stripeConfig,
+        ticketConfig,
       ],
       envFilePath: ['.env'],
+    }),
+    BullModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService<AllConfigType>) => ({
+        connection: {
+          host: configService.getOrThrow('redis.host', { infer: true }),
+          port: configService.getOrThrow('redis.port', { infer: true }),
+        },
+      }),
     }),
     infrastructureDatabaseModule,
     I18nModule.forRootAsync({
