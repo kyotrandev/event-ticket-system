@@ -182,6 +182,17 @@ export class PaymentsService {
         await this.markFailed(intent.id);
         break;
       }
+      case 'charge.refund.updated': {
+        const refund = event.data.object as unknown as {
+          id: string;
+          payment_intent: string;
+          status: string;
+        };
+        if (refund.status === 'succeeded') {
+          await this.recordRefund(refund.payment_intent, refund.id);
+        }
+        break;
+      }
       default:
         this.logger.debug(`ignoring webhook event ${event.type}`);
     }
@@ -400,6 +411,27 @@ export class PaymentsService {
         },
         manager,
       );
+    });
+  }
+
+  /** charge.refund.updated → persist refundId + refundedAt when confirmed. */
+  private async recordRefund(
+    stripePaymentIntentId: string,
+    stripeRefundId: string,
+  ): Promise<void> {
+    await this.dataSource.transaction(async (manager) => {
+      const payment = await manager
+        .createQueryBuilder(PaymentEntity, 'p')
+        .setLock('pessimistic_write')
+        .where('p.stripePaymentIntentId = :pi', { pi: stripePaymentIntentId })
+        .getOne();
+      if (!payment) return;
+      if (payment.stripeRefundId === stripeRefundId) return; // already recorded
+
+      payment.stripeRefundId = stripeRefundId;
+      payment.status = PaymentStatusEnum.REFUNDED;
+      payment.refundedAt = new Date();
+      await manager.save(payment);
     });
   }
 

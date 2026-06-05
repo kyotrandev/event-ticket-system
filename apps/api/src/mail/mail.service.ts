@@ -228,6 +228,54 @@ export class MailService {
     });
   }
 
+  async bookingCancelled(mailData: {
+    to: string;
+    data: { firstName: string; eventName: string; refundAmount: number };
+  }): Promise<void> {
+    await this.mailerService.sendMail({
+      to: mailData.to,
+      subject: `Your booking for ${mailData.data.eventName} has been cancelled`,
+      text: `Your booking for ${mailData.data.eventName} has been cancelled and a refund of ${mailData.data.refundAmount} VND has been initiated.`,
+      templatePath: path.join(
+        this.configService.getOrThrow('app.workingDirectory', { infer: true }),
+        'src',
+        'mail',
+        'mail-templates',
+        'booking-cancelled.hbs',
+      ),
+      context: {
+        app_name: this.configService.get('app.name', { infer: true }),
+        firstName: mailData.data.firstName,
+        eventName: mailData.data.eventName,
+        refundAmount: mailData.data.refundAmount.toLocaleString(),
+      },
+    });
+  }
+
+  async waitlistNotified(mailData: {
+    to: string;
+    data: { firstName: string; ticketTypeName: string; expiresAt: string };
+  }): Promise<void> {
+    await this.mailerService.sendMail({
+      to: mailData.to,
+      subject: `A ticket you wanted is now available`,
+      text: `A ${mailData.data.ticketTypeName} ticket is available for you. Book before ${mailData.data.expiresAt}.`,
+      templatePath: path.join(
+        this.configService.getOrThrow('app.workingDirectory', { infer: true }),
+        'src',
+        'mail',
+        'mail-templates',
+        'waitlist-notified.hbs',
+      ),
+      context: {
+        app_name: this.configService.get('app.name', { infer: true }),
+        firstName: mailData.data.firstName,
+        ticketTypeName: mailData.data.ticketTypeName,
+        expiresAt: mailData.data.expiresAt,
+      },
+    });
+  }
+
   async organizerRejected(
     mailData: MailData<{ firstName: string }>,
   ): Promise<void> {

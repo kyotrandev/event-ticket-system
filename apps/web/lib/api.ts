@@ -176,6 +176,7 @@ import type {
   EventStaffAssignment,
   CheckInResult,
   CheckInLogEntry,
+  WaitlistEntry,
 } from './types';
 
 export const bookingApi = {
@@ -183,6 +184,7 @@ export const bookingApi = {
     api.post<Booking>('/bookings', { items, ...(promoCode ? { promoCode } : {}) }),
   findMine: () => api.get<Booking[]>('/bookings/me'),
   findById: (id: string) => api.get<Booking>(`/bookings/${id}`),
+  cancel: (id: string) => api.delete<void>(`/bookings/${id}`),
 };
 
 export const paymentApi = {
@@ -212,6 +214,14 @@ export const staffApi = {
     api.post<EventStaffAssignment>(`/events/${eventId}/staff`, { staffId }),
   remove: (eventId: string, staffId: string) =>
     api.delete<void>(`/events/${eventId}/staff/${staffId}`),
+};
+
+// --- Waitlist endpoints ---
+export const waitlistApi = {
+  join: (ticketTypeId: string) =>
+    api.post<WaitlistEntry>('/waitlist', { ticketTypeId }),
+  leave: (entryId: string) => api.delete<void>(`/waitlist/${entryId}`),
+  listMine: () => api.get<WaitlistEntry[]>('/waitlist/me'),
 };
 
 // --- Check-in endpoints ---

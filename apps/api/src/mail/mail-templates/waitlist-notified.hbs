@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ticket Available</title>
+</head>
+<body style="margin:0;font-family:arial">
+    <table style="border:0;width:100%">
+        <tr style="background:#eeeeee">
+            <td style="padding:20px;color:#808080;text-align:center;font-size:40px;font-weight:600">
+                {{app_name}}
+            </td>
+        </tr>
+        <tr>
+            <td style="padding:20px;color:#808080;font-size:16px;font-weight:100">
+                Hi {{firstName}},<br><br>
+                Great news — a <strong>{{ticketTypeName}}</strong> ticket you were waiting for is now available!<br><br>
+                <strong>Act fast:</strong> This spot is reserved for you until <strong>{{expiresAt}}</strong>.<br><br>
+                Log in and complete your booking before it expires.
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

@@ -4,25 +4,36 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
+  Logger,
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { DataSource, In } from 'typeorm';
+import Stripe from 'stripe';
+import { AllConfigType } from '../config/config.type';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { Booking } from './domain/booking';
 import { BookingStatusEnum } from './booking-status.enum';
 import { BookingEntity } from './infrastructure/persistence/relational/entities/booking.entity';
 import { BookingItemEntity } from '../booking-items/infrastructure/persistence/relational/entities/booking-item.entity';
 import { TicketTypeEntity } from '../ticket-types/infrastructure/persistence/relational/entities/ticket-type.entity';
+import { TicketEntity } from '../tickets/infrastructure/persistence/relational/entities/ticket.entity';
+import { TicketStatusEnum } from '../tickets/ticket-status.enum';
+import { PaymentEntity } from '../payments/infrastructure/persistence/relational/entities/payment.entity';
+import { PaymentStatusEnum } from '../payments/payment-status.enum';
 import { EventEntity } from '../events/infrastructure/persistence/relational/entities/event.entity';
 import { EventStatusEnum } from '../events/event-status.enum';
 import { TicketTypeStatusEnum } from '../ticket-types/ticket-type-status.enum';
 import { BookingMapper } from './infrastructure/persistence/relational/mappers/booking.mapper';
 import { PromoCodesService } from '../promo-codes/promo-codes.service';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
+import { MailService } from '../mail/mail.service';
+import { WaitlistService } from '../waitlist/waitlist.service';
+import { UserEntity } from '../users/infrastructure/persistence/relational/entities/user.entity';
 
 export const BOOKING_EXPIRY_QUEUE = 'booking-expiry';
 export const BOOKING_HOLD_MINUTES = 15;
@@ -33,16 +44,39 @@ export class BookingExpiredException extends HttpException {
   }
 }
 
+type StripeClient = InstanceType<typeof Stripe>;
+
 @Injectable()
 export class BookingsService {
+  private readonly logger = new Logger(BookingsService.name);
+  private stripeClient: StripeClient | null = null;
+
   constructor(
     @InjectDataSource()
     private readonly dataSource: DataSource,
     @InjectQueue(BOOKING_EXPIRY_QUEUE)
     private readonly expiryQueue: Queue,
+    private readonly configService: ConfigService<AllConfigType>,
     private readonly promoCodesService: PromoCodesService,
     private readonly auditLogsService: AuditLogsService,
+    private readonly mailService: MailService,
+    private readonly waitlistService: WaitlistService,
   ) {}
+
+  private get stripe(): StripeClient {
+    if (!this.stripeClient) {
+      const secretKey = this.configService.get('stripe.secretKey', {
+        infer: true,
+      });
+      if (!secretKey) {
+        throw new UnprocessableEntityException(
+          'Stripe is not configured (STRIPE_SECRET_KEY missing)',
+        );
+      }
+      this.stripeClient = new Stripe(secretKey);
+    }
+    return this.stripeClient;
+  }
 
   /**
    * Creates a booking with a 15-minute seat hold (SPEC US-3.1).
@@ -196,7 +230,198 @@ export class BookingsService {
       },
     );
 
+    // Mark NOTIFIED waitlist entries as FULFILLED for each purchased type.
+    await Promise.allSettled(
+      sortedIds.map((id) =>
+        this.waitlistService.fulfillIfNotified(customerId, id),
+      ),
+    );
+
     return this.findByIdOrFail(bookingId);
+  }
+
+  /**
+   * Cancels a PAID booking, releases inventory, and issues a Stripe refund.
+   * Idempotent: REFUNDED bookings no-op. Only the booking owner may cancel.
+   */
+  async cancel(bookingId: string, userId: string): Promise<void> {
+    const booking = await this.findByIdOrFail(bookingId);
+    if (booking.customerId !== userId) {
+      throw new ForbiddenException('Not your booking');
+    }
+    if (booking.status === BookingStatusEnum.REFUNDED) return; // already cancelled
+    if (booking.status !== BookingStatusEnum.PAID) {
+      throw new UnprocessableEntityException(
+        `Only PAID bookings can be cancelled (current: ${booking.status})`,
+      );
+    }
+
+    // Cancellation window check (SPEC US-5.1): event.startTime − now must exceed cancellationWindowHours.
+    const firstItem = await this.dataSource
+      .getRepository(BookingItemEntity)
+      .findOne({ where: { bookingId }, loadEagerRelations: false });
+    if (firstItem) {
+      const tt = await this.dataSource
+        .getRepository(TicketTypeEntity)
+        .findOne({ where: { id: firstItem.ticketTypeId }, loadEagerRelations: false });
+      if (tt) {
+        const event = await this.dataSource
+          .getRepository(EventEntity)
+          .findOne({ where: { id: tt.eventId } });
+        if (event) {
+          const windowMs = event.cancellationWindowHours * 60 * 60 * 1000;
+          const timeUntilEventMs = event.startTime.getTime() - Date.now();
+          if (timeUntilEventMs <= windowMs) {
+            throw new ForbiddenException(
+              `Cancellation window has closed. No refunds available within ${event.cancellationWindowHours} hours of the event.`,
+            );
+          }
+        }
+      }
+    }
+
+    const cancelledTicketTypeQty = await this.dataSource.transaction(
+      async (manager) => {
+        const bk = await manager
+          .createQueryBuilder(BookingEntity, 'b')
+          .setLock('pessimistic_write')
+          .where('b.id = :id', { id: bookingId })
+          .getOne();
+        if (!bk || bk.status !== BookingStatusEnum.PAID) {
+          return new Map<string, number>(); // concurrent cancel won
+        }
+
+        const items = await manager.find(BookingItemEntity, {
+          where: { bookingId },
+          loadEagerRelations: false,
+        });
+        const ids = [...new Set(items.map((i) => i.ticketTypeId))].sort();
+
+        const lockedTypes = await manager
+          .createQueryBuilder(TicketTypeEntity, 'tt')
+          .setLock('pessimistic_write')
+          .where('tt.id IN (:...ids)', { ids })
+          .orderBy('tt.id', 'ASC')
+          .getMany();
+
+        const typeById = new Map(lockedTypes.map((tt) => [tt.id, tt]));
+        const qtyByType = new Map<string, number>();
+        for (const item of items) {
+          const tt = typeById.get(item.ticketTypeId);
+          if (!tt) continue;
+          const newSoldQty = Math.max(0, tt.soldQty - item.quantity);
+          const newStatus =
+            tt.status === TicketTypeStatusEnum.SOLD_OUT
+              ? TicketTypeStatusEnum.AVAILABLE
+              : tt.status;
+          await manager.update(TicketTypeEntity, item.ticketTypeId, {
+            soldQty: newSoldQty,
+            status: newStatus,
+          });
+          qtyByType.set(
+            item.ticketTypeId,
+            (qtyByType.get(item.ticketTypeId) ?? 0) + item.quantity,
+          );
+        }
+
+        // Cancel tickets
+        await manager
+          .createQueryBuilder()
+          .update(TicketEntity)
+          .set({ status: TicketStatusEnum.CANCELLED })
+          .where('bookingItemId IN (:...itemIds)', {
+            itemIds: items.map((i) => i.id),
+          })
+          .execute();
+
+        // Issue Stripe refund (last step inside transaction for atomicity).
+        // Skip for free bookings (stripePaymentIntentId starts with "free_").
+        const payment = await manager.findOne(PaymentEntity, {
+          where: { bookingId },
+        });
+        if (
+          payment &&
+          payment.status === PaymentStatusEnum.SUCCEEDED &&
+          payment.amount > 0 &&
+          !payment.stripePaymentIntentId.startsWith('free_')
+        ) {
+          const refund = await this.stripe.refunds.create(
+            { payment_intent: payment.stripePaymentIntentId },
+            { idempotencyKey: `refund-${bookingId}` },
+          );
+          payment.stripeRefundId = refund.id;
+          payment.refundedAt = new Date();
+          payment.status = PaymentStatusEnum.REFUNDED;
+          await manager.save(payment);
+        } else if (payment && payment.status === PaymentStatusEnum.SUCCEEDED) {
+          // Free booking — mark refunded without Stripe
+          payment.status = PaymentStatusEnum.REFUNDED;
+          payment.refundedAt = new Date();
+          await manager.save(payment);
+        }
+
+        await manager.update(BookingEntity, bookingId, {
+          status: BookingStatusEnum.REFUNDED,
+        });
+
+        await this.auditLogsService.log(
+          {
+            userId,
+            action: 'booking.cancelled',
+            entity: 'Booking',
+            entityId: bookingId,
+            payload: { totalAmount: bk.totalAmount },
+          },
+          manager,
+        );
+
+        return qtyByType;
+      },
+    );
+
+    // Side effects after commit
+    await Promise.allSettled([
+      this.sendCancellationEmail(bookingId, userId),
+      ...[...cancelledTicketTypeQty.entries()].map(([ticketTypeId, qty]) =>
+        this.waitlistService.notifyNext(ticketTypeId, qty),
+      ),
+    ]);
+  }
+
+  private async sendCancellationEmail(
+    bookingId: string,
+    userId: string,
+  ): Promise<void> {
+    try {
+      const [user, booking] = await Promise.all([
+        this.dataSource
+          .getRepository(UserEntity)
+          .findOne({ where: { id: Number(userId) } }),
+        this.dataSource
+          .getRepository(BookingEntity)
+          .findOne({ where: { id: bookingId }, loadEagerRelations: false }),
+      ]);
+      if (!user?.email || !booking) return;
+
+      // Resolve event name from first booking item
+      const item = await this.dataSource
+        .getRepository(BookingItemEntity)
+        .findOne({
+          where: { bookingId },
+          relations: { ticketType: { event: true } },
+        });
+
+      await this.mailService.bookingCancelled({
+        to: user.email,
+        data: {
+          firstName: user.firstName ?? 'there',
+          eventName: (item as any)?.ticketType?.event?.name ?? 'your event',
+          refundAmount: booking.totalAmount,
+        },
+      });
+    } catch (err) {
+      this.logger.warn(`cancellation email failed for booking ${bookingId}: ${String(err)}`);
+    }
   }
 
   /**

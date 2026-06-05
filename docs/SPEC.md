@@ -554,6 +554,18 @@ WAITING ──(ticket available)──► NOTIFIED ──(user books within 48h)
 
 ## 8. Phase 5 — Cancellation, Refund & Waitlist
 
+> **Status: ✅ Implemented** (commit `feat(api+web): implement Phase 5 cancellation, refund & waitlist`)
+
+### Implementation Notes
+
+- **Cancellation window** enforced before transaction: `event.startTime − now > cancellationWindowHours` (default 24h). Throws 403 if window closed (SPEC US-5.1).
+- **Atomic cancel transaction**: booking locked `FOR UPDATE`, tickets → CANCELLED, `soldQty` decremented, Stripe refund issued last inside the transaction (atomicity; idempotency key `refund-{bookingId}`).
+- **Free bookings** (`stripePaymentIntentId` starts with `free_`): no Stripe call; payment marked REFUNDED + `refundedAt` set directly.
+- **Waitlist notify** runs after transaction commit via `Promise.allSettled()` — one `notifyNext()` call per cancelled ticket type, capped at qty released.
+- **FULFILLED wiring**: `BookingsService.create()` calls `fulfillIfNotified()` for each purchased ticket type. Known tradeoff: a notified user whose booking expires loses the FULFILLED status (entry stays NOTIFIED until 48h TTL).
+- **Partial unique index**: `(userId, ticketTypeId) WHERE status IN ('waiting', 'notified')` — DB-level duplicate guard in addition to service-layer check.
+- **Deviations**: cancellation of already-USED (checked-in) tickets is not blocked — SPEC US-5.1 does not restrict it; organiser can cancel events mid-session.
+
 ### User Stories
 
 ---

@@ -105,7 +105,7 @@ export default function CheckInPage() {
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
       }
-      scanningRef.current = true;
+      scanningRef.current = true; // must be set before scanLoop() reads it
       scanLoop();
     } catch {
       setCameraError('Camera access denied or unavailable.');

@@ -187,3 +187,19 @@ export interface CheckInLogEntry {
   method: CheckInMethod;
   staffName: string;
 }
+
+// Phase 5 — Waitlist
+
+export type WaitlistStatus = 'waiting' | 'notified' | 'fulfilled' | 'expired';
+
+export interface WaitlistEntry {
+  id: string;
+  userId: string;
+  ticketTypeId: string;
+  eventId: string;
+  status: WaitlistStatus;
+  notifiedAt: string | null;
+  expiresAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}

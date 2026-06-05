@@ -65,12 +65,14 @@ import { AuditLogsModule } from './audit-logs/audit-logs.module';
 import { CheckInModule } from './check-in/check-in.module';
 
 import { EventStaffAssignmentsModule } from './event-staff-assignments/event-staff-assignments.module';
+import { WaitlistModule } from './waitlist/waitlist.module';
 
 @Module({
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
   imports: [
     CheckInModule,
     EventStaffAssignmentsModule,
+    WaitlistModule,
     AuditLogsModule,
     PaymentsModule,
     TicketsModule,

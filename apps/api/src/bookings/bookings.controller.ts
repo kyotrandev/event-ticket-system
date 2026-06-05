@@ -1,9 +1,11 @@
 import {
   Controller,
+  Delete,
   Get,
   Post,
   Body,
   Param,
+  ParseUUIDPipe,
   UseGuards,
   Query,
   HttpCode,
@@ -16,6 +18,7 @@ import { CreateBookingDto } from './dto/create-booking.dto';
 import {
   ApiBearerAuth,
   ApiCreatedResponse,
+  ApiNoContentResponse,
   ApiOkResponse,
   ApiParam,
   ApiTags,
@@ -75,5 +78,16 @@ export class BookingsController {
       String(req.user.id),
       isAdmin,
     );
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiParam({ name: 'id', type: String, required: true })
+  @ApiNoContentResponse({ description: 'Booking cancelled and refund issued' })
+  cancel(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req: { user: JwtPayloadType },
+  ): Promise<void> {
+    return this.bookingsService.cancel(id, String(req.user.id));
   }
 }

@@ -9,6 +9,8 @@ import { BookingExpiryProcessor } from './booking-expiry.processor';
 import { RelationalBookingPersistenceModule } from './infrastructure/persistence/relational/relational-persistence.module';
 import { PromoCodesModule } from '../promo-codes/promo-codes.module';
 import { AuditLogsModule } from '../audit-logs/audit-logs.module';
+import { MailModule } from '../mail/mail.module';
+import { WaitlistModule } from '../waitlist/waitlist.module';
 
 @Module({
   imports: [
@@ -17,6 +19,8 @@ import { AuditLogsModule } from '../audit-logs/audit-logs.module';
     BullModule.registerQueue({ name: BOOKING_EXPIRY_QUEUE }),
     PromoCodesModule,
     AuditLogsModule,
+    MailModule,
+    WaitlistModule,
   ],
   controllers: [BookingsController],
   providers: [BookingsService, BookingExpiryProcessor],
