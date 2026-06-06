@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { adminApi } from '@/lib/api';
 import { AdminLayout } from '@/components/admin-layout';
 import { Button } from '@/components/ui/button';
@@ -12,18 +12,13 @@ export default function PendingOrganizersPage() {
   const [actioning, setActioning] = useState<number | string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(() => {
-    setLoading(true);
+  useEffect(() => {
     adminApi
       .getPendingOrganizers()
       .then((res) => setUsers(res.data))
       .catch((e: unknown) => setError(e instanceof Error ? e.message : 'Failed to load'))
       .finally(() => setLoading(false));
   }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
 
   async function handleDecision(user: User, approve: boolean) {
     setActioning(user.id);

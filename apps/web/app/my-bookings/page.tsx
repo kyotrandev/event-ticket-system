@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { bookingApi } from '@/lib/api';
 import type { Booking } from '@/lib/types';
@@ -29,18 +29,13 @@ export default function MyBookingsPage() {
   const [cancelling, setCancelling] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(() => {
-    setLoading(true);
+  useEffect(() => {
     bookingApi
       .findMine()
       .then(setBookings)
       .catch(() => setError('Failed to load bookings'))
       .finally(() => setLoading(false));
   }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
 
   const handleCancel = async (id: string) => {
     if (!confirm('Cancel this booking and request a refund?')) return;

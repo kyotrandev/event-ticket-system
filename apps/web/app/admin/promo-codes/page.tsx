@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { adminApi } from '@/lib/api';
 import { AdminLayout } from '@/components/admin-layout';
 import { Button } from '@/components/ui/button';
@@ -33,18 +33,13 @@ export default function PromoCodesPage() {
   });
   const [formError, setFormError] = useState<string | null>(null);
 
-  const load = useCallback(() => {
-    setLoading(true);
+  useEffect(() => {
     adminApi
       .getPromoCodes(1, 50)
       .then((res) => setCodes(res.data))
       .catch((e: unknown) => setError(e instanceof Error ? e.message : 'Failed to load'))
       .finally(() => setLoading(false));
   }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();

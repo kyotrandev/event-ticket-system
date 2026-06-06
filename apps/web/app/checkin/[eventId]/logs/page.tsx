@@ -29,7 +29,6 @@ export default function CheckInLogsPage() {
 
   useEffect(() => {
     if (!eventId) return;
-    setLoading(true);
     checkInApi
       .getLogs(eventId)
       .then(setLogs)

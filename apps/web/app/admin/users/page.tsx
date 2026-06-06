@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { adminApi } from '@/lib/api';
 import { AdminLayout } from '@/components/admin-layout';
 import { Button } from '@/components/ui/button';
@@ -37,25 +37,30 @@ export default function AdminUsersPage() {
   const [actioning, setActioning] = useState<number | string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(
-    (p: number) => {
-      setLoading(true);
-      adminApi
-        .getUsers(p, 20)
-        .then((res) => {
-          setUsers((prev) => (p === 1 ? res.data : [...prev, ...res.data]));
-          setHasMore(res.hasNextPage);
-          setPage(p);
-        })
-        .catch((e: unknown) => setError(e instanceof Error ? e.message : 'Failed to load users'))
-        .finally(() => setLoading(false));
-    },
-    [],
-  );
+  function load(p: number) {
+    setLoading(true);
+    adminApi
+      .getUsers(p, 20)
+      .then((res) => {
+        setUsers((prev) => (p === 1 ? res.data : [...prev, ...res.data]));
+        setHasMore(res.hasNextPage);
+        setPage(p);
+      })
+      .catch((e: unknown) => setError(e instanceof Error ? e.message : 'Failed to load users'))
+      .finally(() => setLoading(false));
+  }
 
   useEffect(() => {
-    load(1);
-  }, [load]);
+    adminApi
+      .getUsers(1, 20)
+      .then((res) => {
+        setUsers(res.data);
+        setHasMore(res.hasNextPage);
+        setPage(1);
+      })
+      .catch((e: unknown) => setError(e instanceof Error ? e.message : 'Failed to load users'))
+      .finally(() => setLoading(false));
+  }, []);
 
   async function toggleLock(user: User) {
     const isLocked = user.status?.id === StatusId.Locked;
