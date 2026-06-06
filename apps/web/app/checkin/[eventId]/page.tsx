@@ -94,25 +94,6 @@ export default function CheckInPage() {
     }
   }, []);
 
-  const startCamera = useCallback(async () => {
-    setCameraError(null);
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' },
-      });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
-      scanningRef.current = true; // must be set before scanLoop() reads it
-      scanLoop();
-    } catch {
-      setCameraError('Camera access denied or unavailable.');
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const handleScanResult = useCallback(
     async (payload: { c: string; s: string }) => {
       if (cooldownRef.current) return;
@@ -135,11 +116,12 @@ export default function CheckInPage() {
     [eventId],
   );
 
-  function scanLoop() {
+  const scanLoop = useCallback(() => {
     if (!scanningRef.current) return;
     const video = videoRef.current;
     const canvas = canvasRef.current;
     if (!video || !canvas || video.readyState < video.HAVE_ENOUGH_DATA) {
+      // eslint-disable-next-line react-hooks/immutability
       requestAnimationFrame(scanLoop);
       return;
     }
@@ -161,11 +143,31 @@ export default function CheckInPage() {
         // not our QR format, ignore
       }
     }
+    // eslint-disable-next-line react-hooks/immutability
     requestAnimationFrame(scanLoop);
-  }
+  }, [handleScanResult]);
+
+  const startCamera = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' },
+      });
+      setCameraError(null);
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
+      scanningRef.current = true;
+      scanLoop();
+    } catch {
+      setCameraError('Camera access denied or unavailable.');
+    }
+  }, [scanLoop]);
 
   useEffect(() => {
     if (mode === 'qr') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       void startCamera();
     } else {
       stopCamera();

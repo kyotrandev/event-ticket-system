@@ -51,9 +51,7 @@ export class CreatePhase4CheckIn1780610000000 implements MigrationInterface {
     await queryRunner.query(`DROP INDEX "IDX_cil_eventId"`);
     await queryRunner.query(`DROP INDEX "IDX_cil_ticketId"`);
     await queryRunner.query(`DROP TABLE "check_in_log"`);
-    await queryRunner.query(
-      `DROP TYPE "public"."check_in_log_method_enum"`,
-    );
+    await queryRunner.query(`DROP TYPE "public"."check_in_log_method_enum"`);
     await queryRunner.query(`DROP INDEX "IDX_esa_staffId"`);
     await queryRunner.query(`DROP INDEX "IDX_esa_eventId"`);
     await queryRunner.query(`DROP TABLE "event_staff_assignment"`);

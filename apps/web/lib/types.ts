@@ -188,6 +188,59 @@ export interface CheckInLogEntry {
   staffName: string;
 }
 
+// Phase 6 — Analytics & Admin
+
+export interface TicketTypeStat {
+  ticketTypeId: string;
+  name: string;
+  sold: number;
+  revenue: number;
+}
+
+export interface DailyBookingStat {
+  date: string;
+  bookings: number;
+  revenue: number;
+}
+
+export interface TopPromoCode {
+  code: string;
+  usageCount: number;
+  totalDiscount: number;
+}
+
+export interface EventAnalytics {
+  ticketTypeStats: TicketTypeStat[];
+  totalRevenue: number;
+  checkInRate: number;
+  dailyBookings: DailyBookingStat[];
+  topPromoCodes: TopPromoCode[];
+}
+
+export interface AdminStats {
+  users: { admin: number; customer: number; organizer: number; staff: number; total: number };
+  events: { draft: number; published: number; ongoing: number; ended: number; cancelled: number };
+  bookings: { pendingPayment: number; paid: number; expired: number; failed: number; refunded: number };
+  totalGrossRevenue: number;
+  totalRefunds: number;
+}
+
+export type PromoDiscountType = 'percent' | 'fixed';
+
+export interface PromoCode {
+  id: string;
+  code: string;
+  discountType: PromoDiscountType;
+  discountValue: number;
+  maxUses: number;
+  usedCount: number;
+  validFrom: string;
+  validTo: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Phase 5 — Waitlist
 
 export type WaitlistStatus = 'waiting' | 'notified' | 'fulfilled' | 'expired';

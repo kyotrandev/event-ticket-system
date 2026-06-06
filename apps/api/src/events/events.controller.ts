@@ -40,6 +40,8 @@ import { NullableType } from '../utils/types/nullable.type';
 import { EventStaffAssignmentsService } from '../event-staff-assignments/event-staff-assignments.service';
 import { AssignStaffDto } from '../event-staff-assignments/dto/assign-staff.dto';
 import { EventStaffAssignment } from '../event-staff-assignments/domain/event-staff-assignment';
+import { AnalyticsService } from '../analytics/analytics.service';
+import { EventAnalyticsDto } from '../analytics/dto/event-analytics.dto';
 
 @ApiTags('Events')
 @Controller({
@@ -50,6 +52,7 @@ export class EventsController {
   constructor(
     private readonly eventsService: EventsService,
     private readonly staffService: EventStaffAssignmentsService,
+    private readonly analyticsService: AnalyticsService,
   ) {}
 
   @ApiCreatedResponse({ type: Event })
@@ -153,6 +156,25 @@ export class EventsController {
     return this.eventsService.remove(id, String(req.user.id), isAdmin);
   }
 
+  @ApiOkResponse({ type: EventAnalyticsDto })
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(RoleEnum.organizer, RoleEnum.admin)
+  @Get(':id/analytics')
+  @HttpCode(HttpStatus.OK)
+  @ApiParam({ name: 'id', type: String, required: true })
+  getAnalytics(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req: { user: JwtPayloadType },
+  ): Promise<EventAnalyticsDto> {
+    const isAdmin = req.user.role?.id === RoleEnum.admin;
+    return this.analyticsService.getEventAnalytics(
+      id,
+      String(req.user.id),
+      isAdmin,
+    );
+  }
+
   // --- Staff management ---
 
   @ApiCreatedResponse({ type: EventStaffAssignment })
@@ -204,6 +226,11 @@ export class EventsController {
     @Request() req: { user: JwtPayloadType },
   ): Promise<void> {
     const isAdmin = req.user.role?.id === RoleEnum.admin;
-    return this.staffService.remove(eventId, staffId, String(req.user.id), isAdmin);
+    return this.staffService.remove(
+      eventId,
+      staffId,
+      String(req.user.id),
+      isAdmin,
+    );
   }
 }

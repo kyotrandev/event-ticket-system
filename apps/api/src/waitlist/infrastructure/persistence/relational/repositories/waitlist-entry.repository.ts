@@ -57,7 +57,10 @@ export class WaitlistEntryRelationalRepository {
     });
   }
 
-  findWaiting(ticketTypeId: string, limit: number): Promise<WaitlistEntryEntity[]> {
+  findWaiting(
+    ticketTypeId: string,
+    limit: number,
+  ): Promise<WaitlistEntryEntity[]> {
     return this.repo.find({
       where: { ticketTypeId, status: WaitlistStatusEnum.WAITING },
       order: { createdAt: 'ASC' },

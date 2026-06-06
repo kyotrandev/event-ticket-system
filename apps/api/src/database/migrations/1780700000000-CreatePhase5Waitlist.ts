@@ -42,16 +42,12 @@ export class CreatePhase5Waitlist1780700000000 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(
-      `DROP INDEX "IDX_we_user_tickettype_active"`,
-    );
+    await queryRunner.query(`DROP INDEX "IDX_we_user_tickettype_active"`);
     await queryRunner.query(`DROP INDEX "IDX_we_status"`);
     await queryRunner.query(`DROP INDEX "IDX_we_eventId"`);
     await queryRunner.query(`DROP INDEX "IDX_we_ticketTypeId"`);
     await queryRunner.query(`DROP INDEX "IDX_we_userId"`);
     await queryRunner.query(`DROP TABLE "waitlist_entry"`);
-    await queryRunner.query(
-      `DROP TYPE "public"."waitlist_entry_status_enum"`,
-    );
+    await queryRunner.query(`DROP TYPE "public"."waitlist_entry_status_enum"`);
   }
 }

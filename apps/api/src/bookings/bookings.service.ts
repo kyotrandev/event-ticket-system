@@ -261,9 +261,10 @@ export class BookingsService {
       .getRepository(BookingItemEntity)
       .findOne({ where: { bookingId }, loadEagerRelations: false });
     if (firstItem) {
-      const tt = await this.dataSource
-        .getRepository(TicketTypeEntity)
-        .findOne({ where: { id: firstItem.ticketTypeId }, loadEagerRelations: false });
+      const tt = await this.dataSource.getRepository(TicketTypeEntity).findOne({
+        where: { id: firstItem.ticketTypeId },
+        loadEagerRelations: false,
+      });
       if (tt) {
         const event = await this.dataSource
           .getRepository(EventEntity)
@@ -420,7 +421,9 @@ export class BookingsService {
         },
       });
     } catch (err) {
-      this.logger.warn(`cancellation email failed for booking ${bookingId}: ${String(err)}`);
+      this.logger.warn(
+        `cancellation email failed for booking ${bookingId}: ${String(err)}`,
+      );
     }
   }
 

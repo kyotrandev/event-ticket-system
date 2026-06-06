@@ -59,8 +59,7 @@ export class CheckInService {
     method: CheckInMethodEnum,
   ): Promise<CheckInResultDto> {
     const attendeeName = await this.resolveUserName(ticket.customerId);
-    const ticketTypeName =
-      ticket.bookingItem?.ticketType?.name ?? 'Unknown';
+    const ticketTypeName = ticket.bookingItem?.ticketType?.name ?? 'Unknown';
 
     if (ticket.status === TicketStatusEnum.ISSUED) {
       const won = await this.atomicCheckIn(ticket.id);
@@ -153,9 +152,7 @@ export class CheckInService {
 
     const [tickets, staffUsers] = await Promise.all([
       this.dataSource.getRepository(TicketEntity).findByIds(ticketIds),
-      this.dataSource
-        .getRepository(UserEntity)
-        .findByIds(staffIds.map(Number)),
+      this.dataSource.getRepository(UserEntity).findByIds(staffIds.map(Number)),
     ]);
 
     const ticketMap = new Map(tickets.map((t) => [t.id, t]));
@@ -178,7 +175,9 @@ export class CheckInService {
 
     const userName = (u: UserEntity | undefined) =>
       u
-        ? [u.firstName, u.lastName].filter(Boolean).join(' ') || u.email || 'Unknown'
+        ? [u.firstName, u.lastName].filter(Boolean).join(' ') ||
+          u.email ||
+          'Unknown'
         : 'Unknown';
 
     return logs.map((log) => {

@@ -224,6 +224,64 @@ export const waitlistApi = {
   listMine: () => api.get<WaitlistEntry[]>('/waitlist/me'),
 };
 
+// --- Admin endpoints ---
+import type { AdminStats, PromoCode, EventAnalytics } from './types';
+
+export const adminApi = {
+  getStats: () => api.get<AdminStats>('/admin/stats'),
+
+  getUsers: (page = 1, limit = 20) =>
+    api.get<{ data: import('./types').User[]; hasNextPage: boolean }>('/users', { page, limit }),
+
+  getPendingOrganizers: (page = 1, limit = 20) =>
+    api.get<{ data: import('./types').User[]; hasNextPage: boolean }>(
+      '/admin/organizers/pending',
+      { page, limit },
+    ),
+
+  approveOrganizer: (id: number | string) =>
+    api.post<import('./types').User>(`/users/${id}/approve`),
+
+  rejectOrganizer: (id: number | string) =>
+    api.post<import('./types').User>(`/users/${id}/reject`),
+
+  lockUser: (id: number | string) =>
+    api.post<import('./types').User>(`/users/${id}/lock`),
+
+  unlockUser: (id: number | string) =>
+    api.post<import('./types').User>(`/users/${id}/unlock`),
+
+  getPromoCodes: (page = 1, limit = 20) =>
+    api.get<{ data: PromoCode[]; hasNextPage: boolean }>('/promo-codes', { page, limit }),
+
+  createPromoCode: (dto: {
+    code: string;
+    discountType: string;
+    discountValue: number;
+    maxUses: number;
+    validFrom: string;
+    validTo: string;
+    isActive?: boolean;
+  }) => api.post<PromoCode>('/promo-codes', dto),
+
+  updatePromoCode: (id: string, dto: Partial<{ isActive: boolean; maxUses: number }>) =>
+    api.patch<PromoCode>(`/promo-codes/${id}`, dto),
+
+  deletePromoCode: (id: string) => api.delete<void>(`/promo-codes/${id}`),
+};
+
+// --- Organizer endpoints ---
+export const organizerApi = {
+  getEvents: (page = 1, limit = 20) =>
+    api.get<{ data: import('./types').EventModel[]; hasNextPage: boolean }>('/events/my', {
+      page,
+      limit,
+    }),
+
+  getAnalytics: (eventId: string) =>
+    api.get<EventAnalytics>(`/events/${eventId}/analytics`),
+};
+
 // --- Check-in endpoints ---
 export const checkInApi = {
   scan: (code: string, eventId: string, s: string) =>

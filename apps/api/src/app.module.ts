@@ -66,10 +66,12 @@ import { CheckInModule } from './check-in/check-in.module';
 
 import { EventStaffAssignmentsModule } from './event-staff-assignments/event-staff-assignments.module';
 import { WaitlistModule } from './waitlist/waitlist.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
   imports: [
+    AdminModule,
     CheckInModule,
     EventStaffAssignmentsModule,
     WaitlistModule,

@@ -134,10 +134,7 @@ export class WaitlistService {
    * Mark a NOTIFIED waitlist entry as FULFILLED when the user books.
    * No-op if no active NOTIFIED entry exists.
    */
-  async fulfillIfNotified(
-    userId: string,
-    ticketTypeId: string,
-  ): Promise<void> {
+  async fulfillIfNotified(userId: string, ticketTypeId: string): Promise<void> {
     const entry = await this.repo.findNotifiedByUserAndTicketType(
       userId,
       ticketTypeId,
