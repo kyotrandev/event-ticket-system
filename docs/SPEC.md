@@ -624,6 +624,8 @@ WAITING ──(ticket available)──► NOTIFIED ──(user books within 48h)
 
 ## 9. Phase 6 — Analytics & Admin Panel
 
+> **✅ Implemented (backend)** — `GET /api/v1/events/:id/analytics` (organizer+admin, ownership-checked), `GET /api/v1/admin/stats`, `GET /api/v1/admin/organizers/pending`. US-6.3 promo CRUD was already done in Phase 3. Revenue uses PAID+REFUNDED signed sum; check-in rate denominator = ISSUED+USED tickets (excludes CANCELLED). Implemented in `src/analytics/` + `src/admin/`.
+
 ### User Stories
 
 ---

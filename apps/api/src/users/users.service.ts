@@ -5,6 +5,8 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
 import { NullableType } from '../utils/types/nullable.type';
 import { FilterUserDto, SortUserDto } from './dto/query-user.dto';
@@ -22,6 +24,8 @@ import { FileType } from '../files/domain/file';
 import { Role } from '../roles/domain/role';
 import { Status } from '../statuses/domain/status';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UserEntity } from './infrastructure/persistence/relational/entities/user.entity';
+import { UserMapper } from './infrastructure/persistence/relational/mappers/user.mapper';
 
 @Injectable()
 export class UsersService {
@@ -30,6 +34,7 @@ export class UsersService {
     private readonly filesService: FilesService,
     private readonly sessionService: SessionService,
     private readonly mailService: MailService,
+    @InjectDataSource() private readonly dataSource: DataSource,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
@@ -384,5 +389,20 @@ export class UsersService {
     });
 
     return updated!;
+  }
+
+  async findPendingOrganizers(
+    paginationOptions: IPaginationOptions,
+  ): Promise<User[]> {
+    const entities = await this.dataSource.getRepository(UserEntity).find({
+      where: {
+        role: { id: RoleEnum.organizer },
+        status: { id: StatusEnum.pending_approval },
+      },
+      skip: (paginationOptions.page - 1) * paginationOptions.limit,
+      take: paginationOptions.limit,
+      order: { createdAt: 'ASC' },
+    });
+    return entities.map((e) => UserMapper.toDomain(e));
   }
 }
