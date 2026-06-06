@@ -24,8 +24,6 @@ function SuccessPageInner({ id }: { id: string }) {
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    setBooking(null);
     pollStart.current = Date.now();
 
     async function fetchBooking() {
