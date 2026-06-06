@@ -248,19 +248,54 @@ export class PaymentsService {
       }
 
       if (booking.status !== BookingStatusEnum.PENDING_PAYMENT) {
-        // Payment landed after expiry released the hold: record it and
-        // surface for manual refund (automated refund arrives in Phase 5).
-        payment.status = PaymentStatusEnum.SUCCEEDED;
-        await manager.save(payment);
-        await this.auditLogsService.log(
-          {
-            action: 'payment.succeeded_after_expiry',
-            entity: 'Booking',
-            entityId: booking.id,
-            payload: { stripePaymentIntentId, bookingStatus: booking.status },
-          },
-          manager,
-        );
+        // Payment landed after expiry released the hold.
+        // Auto-refund immediately so money is never stuck in limbo.
+        if (
+          booking.status === BookingStatusEnum.EXPIRED &&
+          payment.amount > 0 &&
+          !stripePaymentIntentId.startsWith('free_') &&
+          !payment.stripeRefundId // idempotency: skip if already refunded
+        ) {
+          const refund = await this.stripe.refunds.create(
+            { payment_intent: stripePaymentIntentId },
+            { idempotencyKey: `auto-refund-${stripePaymentIntentId}` },
+          );
+          payment.status = PaymentStatusEnum.REFUNDED;
+          payment.stripeRefundId = refund.id;
+          payment.refundedAt = new Date();
+          await manager.save(payment);
+          await manager.update(BookingEntity, booking.id, {
+            status: BookingStatusEnum.REFUNDED,
+          });
+          await this.auditLogsService.log(
+            {
+              userId: booking.customerId,
+              action: 'payment.auto_refunded_after_expiry',
+              entity: 'Booking',
+              entityId: booking.id,
+              payload: {
+                stripePaymentIntentId,
+                stripeRefundId: refund.id,
+                amount: payment.amount,
+              },
+            },
+            manager,
+          );
+        } else {
+          // Non-expired status (failed, refunded, paid) or free booking —
+          // record the late payment for audit only.
+          payment.status = PaymentStatusEnum.SUCCEEDED;
+          await manager.save(payment);
+          await this.auditLogsService.log(
+            {
+              action: 'payment.succeeded_after_expiry',
+              entity: 'Booking',
+              entityId: booking.id,
+              payload: { stripePaymentIntentId, bookingStatus: booking.status },
+            },
+            manager,
+          );
+        }
         return { paymentId: payment.id, fulfilled: false };
       }
 

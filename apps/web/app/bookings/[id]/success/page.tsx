@@ -1,12 +1,15 @@
 'use client';
 
-import { use, useEffect, useState } from 'react';
+import { use, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { CheckCircle, XCircle } from 'lucide-react';
 import { bookingApi } from '@/lib/api';
 import type { Booking } from '@/lib/types';
 import { buttonVariants } from '@/components/ui/button';
+
+const POLL_INTERVAL_MS = 2000;
+const POLL_TIMEOUT_MS = 30000;
 
 export default function SuccessPage({
   params,
@@ -19,20 +22,50 @@ export default function SuccessPage({
 
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
+  const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pollStart = useRef(0);
 
   useEffect(() => {
-    bookingApi
-      .findById(id)
-      .then(setBooking)
-      .catch(() => null)
-      .finally(() => setLoading(false));
-  }, [id]);
+    let cancelled = false;
+    pollStart.current = Date.now();
+
+    async function fetchBooking() {
+      try {
+        const b = await bookingApi.findById(id);
+        if (cancelled) return;
+        setBooking(b);
+        setLoading(false);
+
+        // Stripe said succeeded but webhook hasn't landed yet — keep polling.
+        if (
+          redirectStatus === 'succeeded' &&
+          b.status === 'pending_payment' &&
+          Date.now() - pollStart.current < POLL_TIMEOUT_MS
+        ) {
+          pollTimer.current = setTimeout(fetchBooking, POLL_INTERVAL_MS);
+        }
+      } catch {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    fetchBooking();
+
+    return () => {
+      cancelled = true;
+      if (pollTimer.current) clearTimeout(pollTimer.current);
+    };
+  }, [id, redirectStatus]);
+
+  // Webhook not yet processed — keep showing the spinner.
+  const waitingForWebhook =
+    redirectStatus === 'succeeded' && booking?.status === 'pending_payment';
 
   const failed =
     redirectStatus === 'failed' ||
-    (booking && booking.status !== 'paid' && !loading);
+    (!loading && !waitingForWebhook && booking && booking.status !== 'paid');
 
-  if (loading) {
+  if (loading || waitingForWebhook) {
     return (
       <div className="mx-auto max-w-lg px-4 py-12">
         <p className="text-muted-foreground">Verifying payment…</p>
