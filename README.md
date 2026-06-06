@@ -126,6 +126,7 @@ event-ticket-system/
 | [docs/SETUP.md](docs/SETUP.md) | Setup guide — prerequisites, install steps, troubleshooting |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Architecture — modules, DB schema, auth flow, queue design |
 | [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) | Contributing — branching, commits, PR flow, code generation |
+| [docs/DEMO.md](docs/DEMO.md) | Demo guide — test accounts, UI pages, end-to-end test flows |
 | [AGENTS.md](AGENTS.md) | AI agent guide — patterns, conventions for AI-assisted development |
 
 ## Team
