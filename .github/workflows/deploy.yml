@@ -51,6 +51,10 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ env.WEB_IMAGE }}:latest
             ${{ env.REGISTRY }}/${{ env.WEB_IMAGE }}:${{ steps.meta.outputs.sha }}
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
+            NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY }}
+            NEXT_PUBLIC_GOOGLE_CLIENT_ID=${{ secrets.NEXT_PUBLIC_GOOGLE_CLIENT_ID }}
 
   deploy:
     name: Deploy to VPS
