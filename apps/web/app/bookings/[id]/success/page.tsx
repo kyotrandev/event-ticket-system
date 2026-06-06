@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useEffect, useRef, useState } from 'react';
+import { use, useEffect, useRef, useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { CheckCircle, XCircle } from 'lucide-react';
@@ -11,22 +11,21 @@ import { buttonVariants } from '@/components/ui/button';
 const POLL_INTERVAL_MS = 2000;
 const POLL_TIMEOUT_MS = 30000;
 
-export default function SuccessPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = use(params);
+function SuccessPageInner({ id }: { id: string }) {
   const searchParams = useSearchParams();
   const redirectStatus = searchParams.get('redirect_status');
 
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
+  // True while polling loop is running; false once it stops (success, timeout, or error).
+  const [pollingActive, setPollingActive] = useState(false);
   const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pollStart = useRef(0);
 
   useEffect(() => {
     let cancelled = false;
+    setLoading(true);
+    setBooking(null);
     pollStart.current = Date.now();
 
     async function fetchBooking() {
@@ -36,16 +35,23 @@ export default function SuccessPage({
         setBooking(b);
         setLoading(false);
 
-        // Stripe said succeeded but webhook hasn't landed yet — keep polling.
-        if (
+        const shouldPoll =
           redirectStatus === 'succeeded' &&
           b.status === 'pending_payment' &&
-          Date.now() - pollStart.current < POLL_TIMEOUT_MS
-        ) {
+          Date.now() - pollStart.current < POLL_TIMEOUT_MS;
+
+        if (shouldPoll) {
+          setPollingActive(true);
           pollTimer.current = setTimeout(fetchBooking, POLL_INTERVAL_MS);
+        } else {
+          // Polling done: either paid, non-pending status, or 30 s timeout elapsed.
+          setPollingActive(false);
         }
       } catch {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+          setPollingActive(false);
+        }
       }
     }
 
@@ -57,9 +63,11 @@ export default function SuccessPage({
     };
   }, [id, redirectStatus]);
 
-  // Webhook not yet processed — keep showing the spinner.
+  // Show spinner while initial fetch is in flight OR while waiting for webhook.
   const waitingForWebhook =
-    redirectStatus === 'succeeded' && booking?.status === 'pending_payment';
+    pollingActive &&
+    redirectStatus === 'succeeded' &&
+    booking?.status === 'pending_payment';
 
   const failed =
     redirectStatus === 'failed' ||
@@ -82,10 +90,7 @@ export default function SuccessPage({
           Your payment could not be processed. You can try again.
         </p>
         <div className="flex gap-3 justify-center">
-          <Link
-            href={`/bookings/${id}/pay`}
-            className={buttonVariants()}
-          >
+          <Link href={`/bookings/${id}/pay`} className={buttonVariants()}>
             Try again
           </Link>
           <Link href="/events" className={buttonVariants({ variant: 'outline' })}>
@@ -112,5 +117,24 @@ export default function SuccessPage({
         </Link>
       </div>
     </div>
+  );
+}
+
+export default function SuccessPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = use(params);
+  return (
+    <Suspense
+      fallback={
+        <div className="mx-auto max-w-lg px-4 py-12">
+          <p className="text-muted-foreground">Verifying payment…</p>
+        </div>
+      }
+    >
+      <SuccessPageInner id={id} />
+    </Suspense>
   );
 }
