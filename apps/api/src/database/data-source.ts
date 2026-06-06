@@ -1,3 +1,4 @@
+import 'dotenv/config'; // loads .env for local dev; does NOT override vars already set in process.env (Docker)
 import 'reflect-metadata';
 import { DataSource, DataSourceOptions } from 'typeorm';
 

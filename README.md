@@ -11,8 +11,8 @@ Full-stack web application for the complete event ticketing lifecycle: creation 
 | Booking & Payment (Stripe) | ✅ Done — API + booking/payment/my-tickets UI (Phase 3) |
 | QR Check-In System | ✅ Done — API + web scanner/logs UI (Phase 4) |
 | Cancellation, Refund & Waitlist | ✅ Done — cancel/refund API + waitlist queue + my-bookings UI (Phase 5, run migration to activate) |
-| Analytics & Admin Panel | ⬜ Phase 6 |
-| Infrastructure & DevOps | 🔄 Phase 7 — CI (lint/build/docker) green; tests pending |
+| Analytics & Admin Panel | ✅ Done — event analytics API + admin panel UI (Phase 6) |
+| Infrastructure & DevOps | ✅ Done — docker-compose, .env.example, CI/CD workflows (Phase 7) |
 
 ## Tech Stack
 
@@ -35,27 +35,36 @@ Full-stack web application for the complete event ticketing lifecycle: creation 
 - Node.js 20+
 - npm 9+
 
-### 1. Clone & configure
+### Option A — Docker (recommended)
 
 ```bash
 git clone <repo-url>
 cd event-ticket-system
-cp apps/api/env-example-relational apps/api/.env
+cp apps/api/.env.example apps/api/.env
+cp apps/web/.env.example apps/web/.env.local
+# edit both files: set AUTH_JWT_SECRET, AUTH_REFRESH_SECRET, Stripe keys
+docker compose up
 ```
 
-Edit `apps/api/.env` — minimum required changes:
-- `AUTH_JWT_SECRET` — any random string
-- `AUTH_REFRESH_SECRET` — any random string
+All services start automatically. Migrations and seeds run on first boot.
 
-### 2. Start infrastructure
+### Option B — Local dev (without Docker)
+
+#### 1. Configure
 
 ```bash
-docker compose up -d postgres redis maildev adminer
+cp apps/api/.env.example apps/api/.env
+cp apps/web/.env.example apps/web/.env.local
+# edit apps/api/.env: AUTH_JWT_SECRET, AUTH_REFRESH_SECRET, Stripe keys
 ```
 
-> **Note:** If port 5432 is in use by a local PostgreSQL, set `DATABASE_PORT=5433` in the root `.env` and `apps/api/.env`. See [Setup Guide](docs/SETUP.md#port-conflicts).
+#### 2. Start infrastructure
 
-### 3. Setup & run API
+```bash
+docker compose up -d postgres redis maildev
+```
+
+#### 3. Run API
 
 ```bash
 cd apps/api
@@ -65,7 +74,7 @@ npm run seed:run:relational
 npm run start:dev
 ```
 
-### 4. Setup & run Web (new terminal)
+#### 4. Run Web (new terminal)
 
 ```bash
 cd apps/web
@@ -77,9 +86,8 @@ npm run dev
 
 | Service | URL | Notes |
 |---|---|---|
-| API (Swagger) | http://localhost:3000/docs | Auto-generated |
-| Web App | http://localhost:3001 | |
-| Adminer (DB UI) | http://localhost:8080 | DB: `event_ticket_db` |
+| API (Swagger) | http://localhost:4000/docs | Auto-generated |
+| Web App | http://localhost:3000 | |
 | MailDev | http://localhost:1080 | Catch all outgoing emails |
 
 ## Project Structure
