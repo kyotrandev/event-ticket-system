@@ -218,8 +218,16 @@ export class PaymentsService {
         .where('p.stripePaymentIntentId = :pi', { pi: stripePaymentIntentId })
         .getOne();
 
-      if (payment?.status === PaymentStatusEnum.SUCCEEDED) {
-        return { paymentId: payment.id, fulfilled: false }; // duplicate webhook
+      // Terminal states: payment was already processed (succeeded or refunded).
+      // SUCCEEDED covers normal duplicate webhook; REFUNDED covers the case
+      // where auto-refund (post-expiry) or manual cancel committed, then Stripe
+      // retried the same payment_intent.succeeded event — without this guard the
+      // else-branch below would corrupt payment.status REFUNDED → SUCCEEDED.
+      if (
+        payment?.status === PaymentStatusEnum.SUCCEEDED ||
+        payment?.status === PaymentStatusEnum.REFUNDED
+      ) {
+        return { paymentId: payment.id, fulfilled: false };
       }
 
       if (!payment) {
