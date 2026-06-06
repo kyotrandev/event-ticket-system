@@ -2,3 +2,8 @@
 /.data
 /dist
 /files
+
+# Never bake dev credentials into the image.
+# Runtime config must come from Docker env vars, not .env files.
+.env
+.env.*
