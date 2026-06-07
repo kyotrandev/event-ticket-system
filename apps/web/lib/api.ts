@@ -6,7 +6,7 @@
 // and replay the original request. Concurrent 401s are single-flighted behind
 // one in-flight refresh promise so we never spend a rotated refresh token twice.
 
-import type { LoginResponse } from './types';
+import type { LoginResponse, User } from './types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000/api/v1';
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { authApi, ApiError } from '@/lib/api';
@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
   const searchParams = useSearchParams();
   const hash = searchParams.get('hash');
   const router = useRouter();
@@ -53,47 +53,55 @@ export default function ResetPasswordPage() {
   if (!hash) return null;
 
   return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Set new password</CardTitle>
+        <CardDescription>
+          Please enter your new password below.
+        </CardDescription>
+      </CardHeader>
+      <form onSubmit={onSubmit}>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="password">New Password</Label>
+            <Input
+              id="password"
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="confirmPassword">Confirm Password</Label>
+            <Input
+              id="confirmPassword"
+              type="password"
+              required
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+            />
+          </div>
+        </CardContent>
+        <CardFooter className="flex flex-col gap-3">
+          <Button type="submit" className="w-full" disabled={submitting}>
+            {submitting ? 'Resetting password...' : 'Reset Password'}
+          </Button>
+          <div className="text-center text-sm text-muted-foreground">
+            <Link href="/login" className="text-foreground underline">Back to login</Link>
+          </div>
+        </CardFooter>
+      </form>
+    </Card>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
     <div className="mx-auto flex max-w-md flex-col px-4 py-12">
-      <Card>
-        <CardHeader>
-          <CardTitle>Set new password</CardTitle>
-          <CardDescription>
-            Please enter your new password below.
-          </CardDescription>
-        </CardHeader>
-        <form onSubmit={onSubmit}>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="password">New Password</Label>
-              <Input
-                id="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-              />
-            </div>
-          </CardContent>
-          <CardFooter className="flex flex-col gap-3">
-            <Button type="submit" className="w-full" disabled={submitting}>
-              {submitting ? 'Resetting password...' : 'Reset Password'}
-            </Button>
-            <div className="text-center text-sm text-muted-foreground">
-              <Link href="/login" className="text-foreground underline">Back to login</Link>
-            </div>
-          </CardFooter>
-        </form>
-      </Card>
+      <Suspense fallback={<div>Loading...</div>}>
+        <ResetPasswordForm />
+      </Suspense>
     </div>
   );
 }

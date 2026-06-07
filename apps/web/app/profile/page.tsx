@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 
 export default function ProfilePage() {
-  const { user, setUser } = useAuth();
+  const { user, updateUser } = useAuth();
   
   const [form, setForm] = useState({
     firstName: '',
@@ -45,7 +45,7 @@ export default function ProfilePage() {
         ...form,
         photo: photoData,
       });
-      setUser(updatedUser);
+      updateUser(updatedUser);
       toast.success('Profile updated successfully');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to update profile');
@@ -70,7 +70,7 @@ export default function ProfilePage() {
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={user.photo.path} alt="Avatar" className="size-full object-cover" />
               ) : (
-                <span className="text-muted-foreground text-3xl uppercase">{form.firstName?.charAt(0) || user.email.charAt(0)}</span>
+                <span className="text-muted-foreground text-3xl uppercase">{form.firstName?.charAt(0) || user.email?.charAt(0) || '?'}</span>
               )}
             </div>
           </div>
@@ -106,7 +106,7 @@ export default function ProfilePage() {
 
         <div className="space-y-1">
           <Label>Email</Label>
-          <Input value={user.email} disabled className="bg-muted" />
+          <Input value={user.email || ''} disabled className="bg-muted" />
           <p className="text-xs text-muted-foreground">Email cannot be changed.</p>
         </div>
 
