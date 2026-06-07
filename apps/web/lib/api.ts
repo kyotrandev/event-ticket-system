@@ -186,6 +186,12 @@ export const authApi = {
     role?: number;
   }) => api.post<void>('/auth/email/register', data, false),
   logout: () => api.post<void>('/auth/logout'),
+  updateProfile: (data: { firstName?: string; lastName?: string; photo?: { id: string; path: string } | null }) =>
+    api.patch<User>('/auth/me', data),
+  forgotPassword: (email: string) =>
+    api.post<void>('/auth/forgot/password', { email }, false),
+  resetPassword: (hash: string, password: string) =>
+    api.post<void>('/auth/reset/password', { hash, password }, false),
 };
 
 // --- Booking endpoints ---
