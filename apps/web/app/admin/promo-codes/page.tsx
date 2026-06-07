@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { adminApi } from '@/lib/api';
 import { AdminLayout } from '@/components/admin-layout';
 import { Button } from '@/components/ui/button';
@@ -78,6 +79,20 @@ export default function PromoCodesPage() {
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Action failed');
+    } finally {
+      setActioning(null);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm('Are you sure you want to delete this promo code?')) return;
+    setActioning(id);
+    setError(null);
+    try {
+      await adminApi.deletePromoCode(id);
+      setCodes((prev) => prev.filter((c) => c.id !== id));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Delete failed');
     } finally {
       setActioning(null);
     }
@@ -234,14 +249,30 @@ export default function PromoCodesPage() {
                     </Badge>
                   </td>
                   <td className="px-3 py-2">
-                    <Button
-                      size="sm"
-                      variant={c.isActive ? 'destructive' : 'outline'}
-                      disabled={actioning === c.id}
-                      onClick={() => void toggleActive(c)}
-                    >
-                      {actioning === c.id ? '…' : c.isActive ? 'Deactivate' : 'Activate'}
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant={c.isActive ? 'secondary' : 'outline'}
+                        disabled={actioning === c.id}
+                        onClick={() => void toggleActive(c)}
+                      >
+                        {actioning === c.id ? '…' : c.isActive ? 'Deactivate' : 'Activate'}
+                      </Button>
+                      <Link
+                        href={`/admin/promo-codes/${c.id}/edit`}
+                        className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-8 px-3"
+                      >
+                        Edit
+                      </Link>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        disabled={actioning === c.id}
+                        onClick={() => void handleDelete(c.id)}
+                      >
+                        Delete
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}

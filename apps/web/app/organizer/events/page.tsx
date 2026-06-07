@@ -54,7 +54,12 @@ export default function OrganizerEventsPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 space-y-6">
-      <h1 className="text-2xl font-bold">My Events</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">My Events</h1>
+        <Link href="/organizer/events/create" className={buttonVariants()}>
+          + Create Event
+        </Link>
+      </div>
 
       {error && (
         <div className="rounded-lg bg-destructive/10 text-destructive p-3 text-sm">{error}</div>
@@ -91,12 +96,46 @@ export default function OrganizerEventsPage() {
                   </span>
                 </td>
                 <td className="px-3 py-2">
-                  <Link
-                    href={`/organizer/events/${ev.id}/analytics`}
-                    className={buttonVariants({ variant: 'outline', size: 'sm' })}
-                  >
-                    Analytics
-                  </Link>
+                  <div className="flex items-center gap-2">
+                    <Link
+                      href={`/organizer/events/${ev.id}/ticket-types`}
+                      className={buttonVariants({ variant: 'outline', size: 'sm' })}
+                    >
+                      Manage Tickets
+                    </Link>
+                    <Link
+                      href={`/organizer/events/${ev.id}/analytics`}
+                      className={buttonVariants({ variant: 'outline', size: 'sm' })}
+                    >
+                      Analytics
+                    </Link>
+                    <Link
+                      href={`/organizer/events/${ev.id}/staff`}
+                      className={buttonVariants({ variant: 'outline', size: 'sm' })}
+                    >
+                      Manage Staff
+                    </Link>
+                    <Link
+                      href={`/organizer/events/${ev.id}/edit`}
+                      className={buttonVariants({ variant: 'outline', size: 'sm' })}
+                    >
+                      Edit
+                    </Link>
+                    <button
+                      onClick={() => {
+                        if (confirm('Are you sure you want to delete this event?')) {
+                          organizerApi.deleteEvent(ev.id).then(() => {
+                            setEvents(events.filter(e => e.id !== ev.id));
+                          }).catch(err => {
+                            setError(err instanceof Error ? err.message : 'Failed to delete');
+                          });
+                        }
+                      }}
+                      className={buttonVariants({ variant: 'destructive', size: 'sm' })}
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}

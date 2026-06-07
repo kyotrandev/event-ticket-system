@@ -1,0 +1,191 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter, useParams } from 'next/navigation';
+import Link from 'next/link';
+import { organizerApi } from '@/lib/api';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+
+export default function EditEventPage() {
+  const router = useRouter();
+  const params = useParams();
+  const id = params.id as string;
+  
+  const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [form, setForm] = useState({
+    name: '',
+    description: '',
+    location: '',
+    category: '',
+    startTime: '',
+    endTime: '',
+    maxTicketsPerOrder: 5,
+    cancellationWindowHours: 24,
+  });
+
+  useEffect(() => {
+    if (id) {
+      organizerApi.getEvent(id)
+        .then(event => {
+          setForm({
+            name: event.name,
+            description: event.description || '',
+            location: event.location,
+            category: event.category,
+            startTime: new Date(event.startTime).toISOString().slice(0, 16),
+            endTime: new Date(event.endTime).toISOString().slice(0, 16),
+            maxTicketsPerOrder: event.maxTicketsPerOrder,
+            cancellationWindowHours: event.cancellationWindowHours,
+          });
+        })
+        .catch(err => {
+          setError(err instanceof Error ? err.message : 'Failed to fetch event');
+        })
+        .finally(() => {
+          setFetching(false);
+        });
+    }
+  }, [id]);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    try {
+      const data = {
+        ...form,
+        startTime: new Date(form.startTime).toISOString(),
+        endTime: new Date(form.endTime).toISOString(),
+        maxTicketsPerOrder: Number(form.maxTicketsPerOrder),
+        cancellationWindowHours: Number(form.cancellationWindowHours),
+      };
+      await organizerApi.updateEvent(id, data);
+      router.push('/organizer/events');
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Failed to update event');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (fetching) {
+    return <div className="p-8 text-center text-muted-foreground">Loading event...</div>;
+  }
+
+  return (
+    <div className="mx-auto max-w-2xl px-4 py-8 space-y-6">
+      <div className="flex items-center gap-4 mb-6">
+        <Link href="/organizer/events" className="text-sm text-muted-foreground hover:underline">
+          &larr; Back
+        </Link>
+        <h1 className="text-2xl font-bold">Edit Event</h1>
+      </div>
+
+      {error && (
+        <div className="rounded-lg bg-destructive/10 text-destructive p-3 text-sm">
+          {error}
+        </div>
+      )}
+
+      <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
+        <div className="space-y-1">
+          <Label htmlFor="name">Event Name</Label>
+          <Input
+            id="name"
+            required
+            value={form.name}
+            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+          />
+        </div>
+
+        <div className="space-y-1">
+          <Label htmlFor="description">Description</Label>
+          <textarea
+            id="description"
+            className="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+            value={form.description}
+            onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <Label htmlFor="location">Location</Label>
+            <Input
+              id="location"
+              required
+              value={form.location}
+              onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="category">Category</Label>
+            <Input
+              id="category"
+              required
+              value={form.category}
+              onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <Label htmlFor="startTime">Start Time</Label>
+            <Input
+              id="startTime"
+              type="datetime-local"
+              required
+              value={form.startTime}
+              onChange={(e) => setForm((f) => ({ ...f, startTime: e.target.value }))}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="endTime">End Time</Label>
+            <Input
+              id="endTime"
+              type="datetime-local"
+              required
+              value={form.endTime}
+              onChange={(e) => setForm((f) => ({ ...f, endTime: e.target.value }))}
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <Label htmlFor="maxTickets">Max Tickets / Order</Label>
+            <Input
+              id="maxTickets"
+              type="number"
+              min={1}
+              required
+              value={form.maxTicketsPerOrder}
+              onChange={(e) => setForm((f) => ({ ...f, maxTicketsPerOrder: Number(e.target.value) }))}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="cancelWindow">Cancel Window (Hours)</Label>
+            <Input
+              id="cancelWindow"
+              type="number"
+              min={0}
+              required
+              value={form.cancellationWindowHours}
+              onChange={(e) => setForm((f) => ({ ...f, cancellationWindowHours: Number(e.target.value) }))}
+            />
+          </div>
+        </div>
+
+        <Button type="submit" disabled={loading} className="w-full">
+          {loading ? 'Saving...' : 'Save Changes'}
+        </Button>
+      </form>
+    </div>
+  );
+}

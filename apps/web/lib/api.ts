@@ -206,6 +206,17 @@ export const ticketApi = {
   },
 };
 
+// --- Ticket Types endpoints ---
+export const ticketTypeApi = {
+  list: (eventId: string) =>
+    api.get<import('./types').TicketType[]>(`/events/${eventId}/ticket-types`),
+  create: (eventId: string, data: Partial<import('./types').TicketType>) =>
+    api.post<import('./types').TicketType>(`/events/${eventId}/ticket-types`, data),
+  update: (id: string, data: Partial<import('./types').TicketType>) =>
+    api.patch<import('./types').TicketType>(`/ticket-types/${id}`, data),
+  delete: (id: string) => api.delete<void>(`/ticket-types/${id}`),
+};
+
 // --- Staff management endpoints ---
 export const staffApi = {
   list: (eventId: string) =>
@@ -280,6 +291,16 @@ export const organizerApi = {
 
   getAnalytics: (eventId: string) =>
     api.get<EventAnalytics>(`/events/${eventId}/analytics`),
+
+  createEvent: (data: Partial<import('./types').EventModel>) =>
+    api.post<import('./types').EventModel>('/events', data),
+
+  getEvent: (id: string) => api.get<import('./types').EventModel>(`/events/${id}`),
+
+  updateEvent: (id: string, data: Partial<import('./types').EventModel>) =>
+    api.patch<import('./types').EventModel>(`/events/${id}`, data),
+
+  deleteEvent: (id: string) => api.delete<void>(`/events/${id}`),
 };
 
 // --- Check-in endpoints ---
