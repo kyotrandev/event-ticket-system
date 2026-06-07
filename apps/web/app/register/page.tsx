@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { Building2, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/auth-context';
 import { ApiError } from '@/lib/api';
@@ -46,36 +47,57 @@ export default function RegisterPage() {
       });
 
       if (asOrganizer) {
-        toast.success('Account created — pending admin approval before you can log in.');
+        toast.success('Account created - pending admin approval before login.');
         router.push('/login');
         return;
       }
 
-      // Customers are active immediately; log them straight in.
       await login(form.email, form.password);
       toast.success('Welcome to EventTix!');
       router.push('/events');
     } catch (err) {
-      const msg =
-        err instanceof ApiError ? err.message : 'Registration failed. Try again.';
-      toast.error(msg);
+      toast.error(
+        err instanceof ApiError ? err.message : 'Registration failed. Try again.',
+      );
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <div className="mx-auto flex max-w-md flex-col px-4 py-12">
-      <Card>
+    <div className="page-shell grid min-h-[calc(100vh-4.75rem)] items-center gap-8 lg:grid-cols-[1fr_1fr]">
+      <section className="space-y-5">
+        <p className="vibrant-chip inline-flex">New pass</p>
+        <h1 className="display-play text-6xl leading-[0.9] sm:text-7xl">
+          Make your account pop.
+        </h1>
+        <p className="max-w-xl text-base font-semibold leading-7 text-muted-foreground">
+          Customer accounts activate immediately. Organizer accounts land in
+          the admin approval queue first.
+        </p>
+        <div className="vibrant-card p-5">
+          <Building2 className="mb-6 size-7 text-primary" />
+          <h2 className="text-2xl font-black">Organizer approval is testable</h2>
+          <p className="mt-2 text-sm font-semibold leading-6 text-muted-foreground">
+            Register as organizer, then approve it from Admin / Pending
+            Organizers using the seeded admin account.
+          </p>
+        </div>
+      </section>
+
+      <Card className="mx-auto w-full max-w-lg">
         <CardHeader>
-          <CardTitle>Create an account</CardTitle>
+          <div className="mb-3 flex size-12 items-center justify-center rounded-lg border-2 border-foreground bg-secondary text-secondary-foreground shadow-[4px_4px_0_var(--primary)]">
+            <UserPlus className="size-5" />
+          </div>
+          <CardTitle>Create account</CardTitle>
           <CardDescription>
-            Password needs 8+ characters, one uppercase letter and one number.
+            Password needs 8+ characters, one uppercase letter, and one number.
           </CardDescription>
         </CardHeader>
         <form onSubmit={onSubmit}>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="firstName">First name</Label>
                 <Input
@@ -117,23 +139,23 @@ export default function RegisterPage() {
                 onChange={update('password')}
               />
             </div>
-            <label className="flex items-center gap-2 text-sm">
+            <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border-2 bg-card px-3 text-sm font-black transition-colors hover:bg-accent">
               <input
                 type="checkbox"
-                className="size-4"
+                className="size-5 accent-[var(--primary)]"
                 checked={asOrganizer}
                 onChange={(e) => setAsOrganizer(e.target.checked)}
               />
-              Register as an event organizer (requires admin approval)
+              Register as an event organizer
             </label>
           </CardContent>
-          <CardFooter className="mt-6 flex flex-col gap-3">
+          <CardFooter className="flex flex-col gap-3">
             <Button type="submit" className="w-full" disabled={submitting}>
-              {submitting ? 'Creating account…' : 'Sign up'}
+              {submitting ? 'Creating account...' : 'Sign up'}
             </Button>
-            <p className="text-muted-foreground text-sm">
+            <p className="text-sm font-semibold text-muted-foreground">
               Already have an account?{' '}
-              <Link href="/login" className="text-foreground underline">
+              <Link href="/login" className="font-black text-foreground underline">
                 Log in
               </Link>
             </p>

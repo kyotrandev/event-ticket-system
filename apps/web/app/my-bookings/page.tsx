@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { bookingApi } from '@/lib/api';
 import type { Booking } from '@/lib/types';
+import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -15,13 +16,12 @@ const STATUS_LABELS: Record<string, string> = {
   refunded: 'Refunded',
 };
 
-const STATUS_COLORS: Record<string, string> = {
-  pending_payment: 'bg-yellow-100 text-yellow-800',
-  paid: 'bg-green-100 text-green-800',
-  expired: 'bg-gray-100 text-gray-600',
-  failed: 'bg-red-100 text-red-800',
-  refunded: 'bg-blue-100 text-blue-800',
-};
+function statusVariant(status: string): 'default' | 'secondary' | 'destructive' | 'outline' {
+  if (status === 'paid') return 'default';
+  if (status === 'pending_payment') return 'secondary';
+  if (status === 'failed') return 'destructive';
+  return 'outline';
+}
 
 export default function MyBookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -55,24 +55,29 @@ export default function MyBookingsPage() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-12">
-        <p className="text-muted-foreground">Loading bookings…</p>
+      <div className="page-shell max-w-3xl">
+        <div className="vibrant-card p-6 font-semibold text-muted-foreground">
+          Loading bookings...
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-12 space-y-6">
-      <h1 className="text-2xl font-bold">My Bookings</h1>
+    <div className="page-shell max-w-3xl space-y-6">
+      <div>
+        <p className="vibrant-chip inline-flex">Customer</p>
+        <h1 className="display-play mt-3 text-6xl leading-[0.9]">My bookings</h1>
+      </div>
 
       {error && (
-        <div className="rounded-lg bg-destructive/10 text-destructive p-3 text-sm">
+        <div className="rounded-lg border-2 border-destructive bg-destructive/10 p-3 text-sm font-semibold text-destructive">
           {error}
         </div>
       )}
 
       {bookings.length === 0 && (
-        <p className="text-muted-foreground">
+        <p className="vibrant-card p-6 font-semibold text-muted-foreground">
           No bookings yet.{' '}
           <Link href="/events" className="underline">
             Browse events
@@ -80,35 +85,31 @@ export default function MyBookingsPage() {
         </p>
       )}
 
-      <div className="space-y-3">
+      <div className="space-y-4">
         {bookings.map((booking) => (
           <Card key={booking.id}>
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-mono text-muted-foreground">
-                  {booking.id.slice(0, 8)}…
+            <CardHeader>
+              <div className="flex items-center justify-between gap-3">
+                <CardTitle className="font-mono text-sm text-muted-foreground">
+                  {booking.id.slice(0, 8)}...
                 </CardTitle>
-                <span
-                  className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                    STATUS_COLORS[booking.status] ?? 'bg-gray-100 text-gray-600'
-                  }`}
-                >
+                <Badge variant={statusVariant(booking.status)}>
                   {STATUS_LABELS[booking.status] ?? booking.status}
-                </span>
+                </Badge>
               </div>
             </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Total</span>
-                <span className="font-medium">
-                  {booking.totalAmount.toLocaleString()} VND
-                </span>
+            <CardContent className="space-y-4">
+              <div className="grid gap-3 rounded-lg border-2 bg-accent p-4 text-sm font-black sm:grid-cols-2">
+                <div>
+                  <span>Total</span>
+                  <p>{booking.totalAmount.toLocaleString()} VND</p>
+                </div>
+                <div>
+                  <span>Date</span>
+                  <p>{new Date(booking.createdAt).toLocaleDateString()}</p>
+                </div>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Date</span>
-                <span>{new Date(booking.createdAt).toLocaleDateString()}</span>
-              </div>
-              <div className="flex gap-2 pt-1">
+              <div className="flex flex-wrap gap-2">
                 {booking.status === 'pending_payment' && (
                   <Link
                     href={`/bookings/${booking.id}/pay`}
@@ -131,7 +132,7 @@ export default function MyBookingsPage() {
                       disabled={cancelling === booking.id}
                       onClick={() => void handleCancel(booking.id)}
                     >
-                      {cancelling === booking.id ? 'Cancelling…' : 'Cancel & Refund'}
+                      {cancelling === booking.id ? 'Cancelling...' : 'Cancel & Refund'}
                     </Button>
                   </>
                 )}

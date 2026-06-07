@@ -27,31 +27,32 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
 
   if (loading || !user || user.role?.id !== RoleId.Admin) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <span className="text-muted-foreground">Loading…</span>
+      <div className="flex min-h-screen items-center justify-center">
+        <span className="font-semibold text-muted-foreground">Loading...</span>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="border-b bg-muted/30">
-        <div className="mx-auto max-w-6xl px-4 flex gap-1 py-2">
+      <div className="border-b-2 bg-card/80 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl gap-2 overflow-x-auto px-4 py-3 sm:px-6 lg:px-8">
           {NAV.map((n) => (
             <Link
               key={n.href}
               href={n.href}
               className={buttonVariants({
-                variant: pathname === n.href ? 'default' : 'ghost',
+                variant: pathname === n.href ? 'secondary' : 'ghost',
                 size: 'sm',
               })}
+              aria-current={pathname === n.href ? 'page' : undefined}
             >
               {n.label}
             </Link>
           ))}
         </div>
       </div>
-      <div className="mx-auto max-w-6xl px-4 py-8">{children}</div>
+      <div className="page-shell">{children}</div>
     </div>
   );
 }
