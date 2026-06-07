@@ -4,7 +4,7 @@ import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { CalendarDays, MapPin, Tag } from 'lucide-react';
 import { toast } from 'sonner';
-import { api, ApiError, bookingApi } from '@/lib/api';
+import { api, ApiError, bookingApi, waitlistApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import type { EventModel, TicketType } from '@/lib/types';
 import { formatDateTime } from '@/components/event-card';
@@ -95,6 +95,16 @@ export default function EventDetailPage({
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Booking failed');
       setBooking(false);
+    }
+  }
+
+  async function handleJoinWaitlist(ticketTypeId: string) {
+    if (!user) { router.push('/login'); return; }
+    try {
+      await waitlistApi.join(ticketTypeId);
+      toast.success('Joined waitlist successfully!');
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Failed to join waitlist');
     }
   }
 
@@ -263,6 +273,17 @@ export default function EventDetailPage({
                         </Button>
                       </div>
                     </div>
+                  </CardContent>
+                )}
+                {soldOut && eventActive && (
+                  <CardContent>
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => void handleJoinWaitlist(t.id)}
+                    >
+                      Join Waitlist
+                    </Button>
                   </CardContent>
                 )}
               </Card>

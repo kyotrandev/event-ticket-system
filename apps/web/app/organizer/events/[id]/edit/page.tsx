@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { organizerApi } from '@/lib/api';
+import { organizerApi, fileApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,6 +16,8 @@ export default function EditEventPage() {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
+  const [currentBanner, setCurrentBanner] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     name: '',
@@ -32,6 +34,7 @@ export default function EditEventPage() {
     if (id) {
       organizerApi.getEvent(id)
         .then(event => {
+          setCurrentBanner(event.bannerUrl || null);
           setForm({
             name: event.name,
             description: event.description || '',
@@ -57,8 +60,15 @@ export default function EditEventPage() {
     setLoading(true);
     setError(null);
     try {
+      let uploadedBannerUrl: string | undefined = undefined;
+      if (bannerFile) {
+        const uploadRes = await fileApi.upload(bannerFile);
+        uploadedBannerUrl = uploadRes.file.path;
+      }
+
       const data = {
         ...form,
+        ...(uploadedBannerUrl ? { bannerUrl: uploadedBannerUrl } : {}),
         startTime: new Date(form.startTime).toISOString(),
         endTime: new Date(form.endTime).toISOString(),
         maxTicketsPerOrder: Number(form.maxTicketsPerOrder),
@@ -110,6 +120,17 @@ export default function EditEventPage() {
             className="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
             value={form.description}
             onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+          />
+        </div>
+
+        <div className="space-y-1">
+          <Label htmlFor="banner">Banner Image (Optional)</Label>
+          {currentBanner && <p className="text-xs text-muted-foreground mb-2">Current banner exists. Upload a new one to replace.</p>}
+          <Input
+            id="banner"
+            type="file"
+            accept="image/*"
+            onChange={(e) => setBannerFile(e.target.files?.[0] || null)}
           />
         </div>
 

@@ -154,6 +154,26 @@ export const api = {
     request<T>(path, { method: 'DELETE', auth }),
 };
 
+export const fileApi = {
+  upload: async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const token = tokenStore.get();
+    const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000/api/v1';
+    const res = await fetch(`${API_URL}/files/upload`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`File upload failed: ${text}`);
+    }
+    const data = await res.json();
+    return data as { file: { id: string; path: string } };
+  },
+};
+
 // --- Auth endpoints ---
 export const authApi = {
   login: (email: string, password: string) =>

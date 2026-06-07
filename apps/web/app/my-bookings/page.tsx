@@ -110,12 +110,22 @@ export default function MyBookingsPage() {
               </div>
               <div className="flex gap-2 pt-1">
                 {booking.status === 'pending_payment' && (
-                  <Link
-                    href={`/bookings/${booking.id}/pay`}
-                    className={buttonVariants({ size: 'sm' })}
-                  >
-                    Pay now
-                  </Link>
+                  <>
+                    <Link
+                      href={`/bookings/${booking.id}/pay`}
+                      className={buttonVariants({ size: 'sm' })}
+                    >
+                      Pay now
+                    </Link>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      disabled={cancelling === booking.id}
+                      onClick={() => void handleCancel(booking.id)}
+                    >
+                      {cancelling === booking.id ? 'Cancelling…' : 'Cancel'}
+                    </Button>
+                  </>
                 )}
                 {booking.status === 'paid' && (
                   <>
