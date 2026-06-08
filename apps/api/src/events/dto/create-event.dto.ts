@@ -4,7 +4,6 @@ import {
   IsString,
   IsDateString,
   IsOptional,
-  IsUrl,
   IsInt,
   IsArray,
   Min,

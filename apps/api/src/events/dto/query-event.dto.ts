@@ -1,5 +1,11 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, IsNumber, Min } from 'class-validator';
+import {
+  IsDateString,
+  IsOptional,
+  IsString,
+  IsNumber,
+  Min,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class QueryEventDto {
@@ -28,12 +34,12 @@ export class QueryEventDto {
   category?: string;
 
   @ApiPropertyOptional({ type: String, description: 'ISO date string' })
-  @IsString()
+  @IsDateString()
   @IsOptional()
   dateFrom?: string;
 
   @ApiPropertyOptional({ type: String, description: 'ISO date string' })
-  @IsString()
+  @IsDateString()
   @IsOptional()
   dateTo?: string;
 

@@ -233,7 +233,6 @@ export class AuthService {
 
   async register(dto: AuthRegisterLoginDto): Promise<void> {
     const roleId = dto.role ?? RoleEnum.customer;
-    const isOrganizer = roleId === RoleEnum.organizer;
 
     const user = await this.usersService.create({
       ...dto,
@@ -247,7 +246,7 @@ export class AuthService {
       companyName: dto.companyName,
       phoneNumber: dto.phoneNumber,
     });
-      const hash = await this.jwtService.signAsync(
+    const hash = await this.jwtService.signAsync(
       {
         confirmEmailUserId: user.id,
       },
@@ -269,7 +268,10 @@ export class AuthService {
         },
       });
     } catch (error) {
-      console.error('Failed to enqueue verification email during signup', error);
+      console.error(
+        'Failed to enqueue verification email during signup',
+        error,
+      );
     }
   }
 
