@@ -48,7 +48,7 @@ export class CreateEventDto {
   endTime: string;
 
   @ApiPropertyOptional({ type: String })
-  @IsUrl()
+  @IsString()
   @IsOptional()
   bannerUrl?: string;
 

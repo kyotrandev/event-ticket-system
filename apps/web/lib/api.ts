@@ -328,6 +328,9 @@ export const organizerApi = {
   updateEvent: (id: string, data: Partial<import('./types').EventModel>) =>
     api.patch<import('./types').EventModel>(`/events/${id}`, data),
 
+  updateEventStatus: (id: string, status: string) =>
+    api.patch<import('./types').EventModel>(`/events/${id}/status`, { status }),
+
   deleteEvent: (id: string) => api.delete<void>(`/events/${id}`),
 };
 

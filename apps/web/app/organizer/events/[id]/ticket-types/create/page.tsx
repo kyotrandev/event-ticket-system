@@ -18,11 +18,23 @@ export default function CreateTicketTypePage() {
 
   const [form, setForm] = useState({
     name: '',
-    price: 0,
+    price: '0',
     totalQty: 100,
     saleStart: '',
     saleEnd: '',
   });
+
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Remove non-digit characters
+    const val = e.target.value.replace(/\D/g, '');
+    if (val === '') {
+      setForm((f) => ({ ...f, price: '' }));
+      return;
+    }
+    // Format with commas
+    const formatted = new Intl.NumberFormat('en-US').format(parseInt(val, 10));
+    setForm((f) => ({ ...f, price: formatted }));
+  };
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -31,7 +43,7 @@ export default function CreateTicketTypePage() {
     try {
       const data = {
         name: form.name,
-        price: Number(form.price),
+        price: Number(form.price.replace(/,/g, '')),
         totalQty: Number(form.totalQty),
         saleStart: new Date(form.saleStart).toISOString(),
         saleEnd: new Date(form.saleEnd).toISOString(),
@@ -77,11 +89,10 @@ export default function CreateTicketTypePage() {
             <Label htmlFor="price">Price (VND)</Label>
             <Input
               id="price"
-              type="number"
-              min={0}
+              type="text"
               required
               value={form.price}
-              onChange={(e) => setForm((f) => ({ ...f, price: Number(e.target.value) }))}
+              onChange={handlePriceChange}
             />
           </div>
           <div className="space-y-1">

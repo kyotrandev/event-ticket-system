@@ -66,11 +66,11 @@ export class TicketTypesService {
       });
     }
 
-    if (saleEnd >= startTime) {
+    if (saleEnd > event.endTime) {
       throw new UnprocessableEntityException({
         status: HttpStatus.UNPROCESSABLE_ENTITY,
         errors: {
-          saleEnd: 'saleEnd must be before event startTime',
+          saleEnd: 'saleEnd must be before or equal to event endTime',
         },
       });
     }
