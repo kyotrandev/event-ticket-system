@@ -184,6 +184,8 @@ export const authApi = {
     firstName: string;
     lastName: string;
     role?: number;
+    companyName?: string;
+    phoneNumber?: string;
   }) => api.post<void>('/auth/email/register', data, false),
   logout: () => api.post<void>('/auth/logout'),
   updateProfile: (data: { firstName?: string; lastName?: string; photo?: { id: string; path: string } | null }) =>

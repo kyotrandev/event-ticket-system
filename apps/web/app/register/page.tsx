@@ -27,6 +27,8 @@ export default function RegisterPage() {
     lastName: '',
     email: '',
     password: '',
+    companyName: '',
+    phoneNumber: '',
   });
   const [asOrganizer, setAsOrganizer] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -41,20 +43,29 @@ export default function RegisterPage() {
     setSubmitting(true);
     try {
       await register({
-        ...form,
+        firstName: form.firstName,
+        lastName: form.lastName,
+        email: form.email,
+        password: form.password,
         role: asOrganizer ? RoleId.Organizer : RoleId.Customer,
+        ...(asOrganizer && {
+          companyName: form.companyName,
+          phoneNumber: form.phoneNumber,
+        }),
       });
 
       if (asOrganizer) {
-        toast.success('Account created — pending admin approval before you can log in.');
-        router.push('/login');
-        return;
+        toast.success(
+          'Account created! Please check your email to verify your address. After verification, your account will be reviewed by an admin.',
+          { duration: 8000 },
+        );
+      } else {
+        toast.success(
+          'Account created! Please check your email and click the verification link to activate your account.',
+          { duration: 8000 },
+        );
       }
-
-      // Customers are active immediately; log them straight in.
-      await login(form.email, form.password);
-      toast.success('Welcome to EventTix!');
-      router.push('/events');
+      router.push('/login');
     } catch (err) {
       const msg =
         err instanceof ApiError ? err.message : 'Registration failed. Try again.';
@@ -126,6 +137,29 @@ export default function RegisterPage() {
               />
               Register as an event organizer (requires admin approval)
             </label>
+
+            {asOrganizer && (
+              <div className="grid grid-cols-2 gap-3 mt-2">
+                <div className="space-y-2">
+                  <Label htmlFor="companyName">Company Name</Label>
+                  <Input
+                    id="companyName"
+                    required
+                    value={form.companyName}
+                    onChange={update('companyName')}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phoneNumber">Phone Number</Label>
+                  <Input
+                    id="phoneNumber"
+                    required
+                    value={form.phoneNumber}
+                    onChange={update('phoneNumber')}
+                  />
+                </div>
+              </div>
+            )}
           </CardContent>
           <CardFooter className="mt-6 flex flex-col gap-3">
             <Button type="submit" className="w-full" disabled={submitting}>
