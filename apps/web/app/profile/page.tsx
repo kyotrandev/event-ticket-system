@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { authApi, fileApi } from '@/lib/api';
+import type { User } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,26 +11,33 @@ import { toast } from 'sonner';
 
 export default function ProfilePage() {
   const { user, updateUser } = useAuth();
-  
-  const [form, setForm] = useState({
-    firstName: '',
-    lastName: '',
-  });
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-
-  useEffect(() => {
-    if (user) {
-      setForm({
-        firstName: user.firstName || '',
-        lastName: user.lastName || '',
-      });
-    }
-  }, [user]);
 
   if (!user) {
     return <div className="p-8 text-center text-muted-foreground">Please log in.</div>;
   }
+
+  return (
+    <ProfileForm
+      key={user.id ?? user.email}
+      user={user}
+      updateUser={updateUser}
+    />
+  );
+}
+
+function ProfileForm({
+  user,
+  updateUser,
+}: {
+  user: User;
+  updateUser: (user: User) => void;
+}) {
+  const [form, setForm] = useState(() => ({
+    firstName: user.firstName || '',
+    lastName: user.lastName || '',
+  }));
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
