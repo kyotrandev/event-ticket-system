@@ -136,6 +136,9 @@ export class UsersService {
       status: status,
       provider: createUserDto.provider ?? AuthProvidersEnum.email,
       socialId: createUserDto.socialId,
+      companyName: createUserDto.companyName ?? null,
+      phoneNumber: createUserDto.phoneNumber ?? null,
+      isEmailVerified: false,
     });
   }
 
@@ -290,6 +293,9 @@ export class UsersService {
       status,
       provider: updateUserDto.provider,
       socialId: updateUserDto.socialId,
+      isEmailVerified: updateUserDto.isEmailVerified,
+      companyName: updateUserDto.companyName,
+      phoneNumber: updateUserDto.phoneNumber,
     });
   }
 
@@ -318,10 +324,14 @@ export class UsersService {
       status: { id: StatusEnum.active },
     });
 
-    await this.mailService.organizerApproved({
-      to: user.email ?? '',
-      data: { firstName: user.firstName ?? '' },
-    });
+    try {
+      await this.mailService.organizerApproved({
+        to: user.email ?? '',
+        data: { firstName: user.firstName ?? '' },
+      });
+    } catch (error) {
+      console.error('Failed to send organizer approval email', error);
+    }
 
     return updated!;
   }
@@ -347,10 +357,14 @@ export class UsersService {
       status: { id: StatusEnum.locked },
     });
 
-    await this.mailService.organizerRejected({
-      to: user.email ?? '',
-      data: { firstName: user.firstName ?? '' },
-    });
+    try {
+      await this.mailService.organizerRejected({
+        to: user.email ?? '',
+        data: { firstName: user.firstName ?? '' },
+      });
+    } catch (error) {
+      console.error('Failed to send organizer rejection email', error);
+    }
 
     return updated!;
   }

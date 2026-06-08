@@ -45,4 +45,16 @@ export class UpdateUserDto extends PartialType(CreateUserDto) {
   @IsOptional()
   @Type(() => StatusDto)
   status?: StatusDto;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  companyName?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  phoneNumber?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  isEmailVerified?: boolean;
 }

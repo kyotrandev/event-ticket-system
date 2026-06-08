@@ -47,6 +47,15 @@ export class UserEntity extends EntityRelationalHelper {
   @Column({ type: String, nullable: true })
   lastName: string | null;
 
+  @Column({ default: false })
+  isEmailVerified: boolean;
+
+  @Column({ type: String, nullable: true })
+  companyName: string | null;
+
+  @Column({ type: String, nullable: true })
+  phoneNumber: string | null;
+
   @OneToOne(() => FileEntity, {
     eager: true,
   })

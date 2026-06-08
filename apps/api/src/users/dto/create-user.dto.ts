@@ -52,4 +52,12 @@ export class CreateUserDto {
   @IsOptional()
   @Type(() => StatusDto)
   status?: StatusDto;
+
+  @ApiPropertyOptional({ example: 'Tech Event Co' })
+  @IsOptional()
+  companyName?: string | null;
+
+  @ApiPropertyOptional({ example: '0987654321' })
+  @IsOptional()
+  phoneNumber?: string | null;
 }

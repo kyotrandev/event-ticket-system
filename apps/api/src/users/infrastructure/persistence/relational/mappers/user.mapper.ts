@@ -15,6 +15,9 @@ export class UserMapper {
     domainEntity.socialId = raw.socialId;
     domainEntity.firstName = raw.firstName;
     domainEntity.lastName = raw.lastName;
+    domainEntity.isEmailVerified = raw.isEmailVerified;
+    domainEntity.companyName = raw.companyName;
+    domainEntity.phoneNumber = raw.phoneNumber;
     if (raw.photo) {
       domainEntity.photo = FileMapper.toDomain(raw.photo);
     }
@@ -61,6 +64,9 @@ export class UserMapper {
     persistenceEntity.socialId = domainEntity.socialId;
     persistenceEntity.firstName = domainEntity.firstName;
     persistenceEntity.lastName = domainEntity.lastName;
+    persistenceEntity.isEmailVerified = domainEntity.isEmailVerified;
+    persistenceEntity.companyName = domainEntity.companyName;
+    persistenceEntity.phoneNumber = domainEntity.phoneNumber;
     persistenceEntity.photo = photo;
     persistenceEntity.role = role;
     persistenceEntity.status = status;
