@@ -12,6 +12,16 @@ export function formatDateTime(iso: string): string {
 }
 
 export function EventCard({ event }: { event: EventModel }) {
+  let displayLocation = event.location;
+  try {
+    const parsed = JSON.parse(event.location);
+    if (parsed.address) {
+      displayLocation = parsed.address;
+    }
+  } catch {
+    // Ignore, keep raw string
+  }
+
   return (
     <Link href={`/events/${event.id}`} className="group">
       <Card className="h-full overflow-hidden pt-0 transition-shadow group-hover:shadow-md">
@@ -43,7 +53,7 @@ export function EventCard({ event }: { event: EventModel }) {
           </p>
           <p className="flex items-center gap-1.5">
             <MapPin className="size-4 shrink-0" />
-            <span className="line-clamp-1">{event.location}</span>
+            <span className="line-clamp-1">{displayLocation}</span>
           </p>
         </CardContent>
       </Card>

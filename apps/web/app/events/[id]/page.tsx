@@ -19,6 +19,12 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import dynamic from 'next/dynamic';
+
+const Map = dynamic(() => import('@/components/LocationPickerMap'), { 
+  ssr: false, 
+  loading: () => <div className="h-[200px] w-full bg-muted flex items-center justify-center animate-pulse rounded-md border">Loading map...</div> 
+});
 
 function formatVnd(amount: number): string {
   return amount === 0
@@ -127,6 +133,16 @@ export default function EventDetailPage({
   const eventActive =
     event.status === 'published' || event.status === 'ongoing';
 
+  let locationAddress = event.location;
+  let locationPos: { lat: number; lng: number } | null = null;
+  try {
+    const parsed = JSON.parse(event.location);
+    if (parsed.address) locationAddress = parsed.address;
+    if (parsed.lat && parsed.lng) locationPos = { lat: parsed.lat, lng: parsed.lng };
+  } catch {
+    // raw string
+  }
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
       <div className="bg-muted mb-6 aspect-[21/9] w-full overflow-hidden rounded-lg">
@@ -167,10 +183,17 @@ export default function EventDetailPage({
           <CalendarDays className="size-4" />
           {formatDateTime(event.startTime)} — {formatDateTime(event.endTime)}
         </p>
-        <p className="flex items-center gap-2">
-          <MapPin className="size-4" />
-          {event.location}
-        </p>
+        <div className="flex flex-col gap-2">
+          <p className="flex items-center gap-2">
+            <MapPin className="size-4 shrink-0" />
+            <span className="line-clamp-2">{locationAddress}</span>
+          </p>
+          {locationPos && (
+            <div className="mt-2 rounded-md overflow-hidden border w-full max-w-md h-[200px]">
+              <Map position={locationPos} readOnly />
+            </div>
+          )}
+        </div>
       </div>
 
       {event.description && (

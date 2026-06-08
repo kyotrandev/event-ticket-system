@@ -15,14 +15,17 @@ const icon = L.icon({
 
 interface Props {
   position: { lat: number; lng: number } | null;
-  onPositionChange: (pos: { lat: number; lng: number }) => void;
+  onPositionChange?: (pos: { lat: number; lng: number }) => void;
   searchCenter?: { lat: number; lng: number } | null;
+  readOnly?: boolean;
 }
 
-function LocationMarker({ position, onPositionChange }: { position: { lat: number; lng: number } | null, onPositionChange: (pos: { lat: number; lng: number }) => void }) {
+function LocationMarker({ position, onPositionChange, readOnly }: { position: { lat: number; lng: number } | null, onPositionChange?: (pos: { lat: number; lng: number }) => void, readOnly?: boolean }) {
   useMapEvents({
     click(e) {
-      onPositionChange(e.latlng);
+      if (!readOnly && onPositionChange) {
+        onPositionChange(e.latlng);
+      }
     },
   });
 
@@ -41,7 +44,7 @@ function MapUpdater({ center }: { center: { lat: number; lng: number } | null })
   return null;
 }
 
-export default function LocationPickerMap({ position, onPositionChange, searchCenter }: Props) {
+export default function LocationPickerMap({ position, onPositionChange, searchCenter, readOnly }: Props) {
   // Default to Vietnam/Hanoi center if no position selected
   const initialCenter = position || { lat: 21.0285, lng: 105.8542 };
 
@@ -51,7 +54,7 @@ export default function LocationPickerMap({ position, onPositionChange, searchCe
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      <LocationMarker position={position} onPositionChange={onPositionChange} />
+      <LocationMarker position={position} onPositionChange={onPositionChange} readOnly={readOnly} />
       <MapUpdater center={searchCenter || position} />
     </MapContainer>
   );
