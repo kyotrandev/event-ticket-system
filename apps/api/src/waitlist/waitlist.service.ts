@@ -90,7 +90,18 @@ export class WaitlistService {
    * a booking is cancelled and inventory is restored).
    */
   async notifyNext(ticketTypeId: string, qty: number): Promise<void> {
-    const entries = await this.repo.findWaiting(ticketTypeId, qty);
+    const ticketType = await this.dataSource
+      .getRepository(TicketTypeEntity)
+      .findOne({ where: { id: ticketTypeId }, loadEagerRelations: false });
+    if (!ticketType) return;
+
+    const available =
+      ticketType.totalQty - ticketType.soldQty - ticketType.reservedQty;
+    const alreadyNotified = await this.repo.countNotified(ticketTypeId);
+    const notifyLimit = Math.min(qty, Math.max(0, available - alreadyNotified));
+    if (notifyLimit <= 0) return;
+
+    const entries = await this.repo.findWaiting(ticketTypeId, notifyLimit);
     if (!entries.length) return;
 
     const userIds = entries.map((e) => Number(e.userId));
@@ -98,10 +109,6 @@ export class WaitlistService {
       .getRepository(UserEntity)
       .findByIds(userIds);
     const userMap = new Map(users.map((u) => [String(u.id), u]));
-
-    const ticketType = await this.dataSource
-      .getRepository(TicketTypeEntity)
-      .findOne({ where: { id: ticketTypeId }, loadEagerRelations: false });
 
     for (const entry of entries) {
       const expiresAt = new Date(
@@ -170,5 +177,6 @@ export class WaitlistService {
       entity: 'WaitlistEntry',
       entityId: entryId,
     });
+    await this.notifyNext(entry.ticketTypeId, 1);
   }
 }

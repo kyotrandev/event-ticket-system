@@ -68,6 +68,12 @@ export class WaitlistEntryRelationalRepository {
     });
   }
 
+  countNotified(ticketTypeId: string): Promise<number> {
+    return this.repo.count({
+      where: { ticketTypeId, status: WaitlistStatusEnum.NOTIFIED },
+    });
+  }
+
   update(
     id: string,
     data: Partial<
