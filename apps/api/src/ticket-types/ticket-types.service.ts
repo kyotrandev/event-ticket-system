@@ -28,6 +28,28 @@ function computeEffectiveStatus(
     : TicketTypeStatusEnum.AVAILABLE;
 }
 
+function assertSaleWindowBeforeEventStart(
+  saleStart: Date,
+  saleEnd: Date,
+  eventStart: Date,
+) {
+  if (saleStart >= saleEnd) {
+    throw new UnprocessableEntityException({
+      status: HttpStatus.UNPROCESSABLE_ENTITY,
+      errors: { saleStart: 'saleStart must be before saleEnd' },
+    });
+  }
+
+  if (saleEnd > eventStart) {
+    throw new UnprocessableEntityException({
+      status: HttpStatus.UNPROCESSABLE_ENTITY,
+      errors: {
+        saleEnd: 'saleEnd must be before or equal to event startTime',
+      },
+    });
+  }
+}
+
 @Injectable()
 export class TicketTypesService {
   constructor(
@@ -57,23 +79,8 @@ export class TicketTypesService {
 
     const saleStart = new Date(dto.saleStart);
     const saleEnd = new Date(dto.saleEnd);
-    const startTime = event.startTime;
 
-    if (saleStart >= saleEnd) {
-      throw new UnprocessableEntityException({
-        status: HttpStatus.UNPROCESSABLE_ENTITY,
-        errors: { saleStart: 'saleStart must be before saleEnd' },
-      });
-    }
-
-    if (saleEnd > event.endTime) {
-      throw new UnprocessableEntityException({
-        status: HttpStatus.UNPROCESSABLE_ENTITY,
-        errors: {
-          saleEnd: 'saleEnd must be before or equal to event endTime',
-        },
-      });
-    }
+    assertSaleWindowBeforeEventStart(saleStart, saleEnd, event.startTime);
 
     const tt = await this.ticketTypeRepository.create({
       eventId,
@@ -159,12 +166,11 @@ export class TicketTypesService {
     const resolvedSaleEnd = dto.saleEnd
       ? new Date(dto.saleEnd)
       : ticketType.saleEnd;
-    if (resolvedSaleStart >= resolvedSaleEnd) {
-      throw new UnprocessableEntityException({
-        status: HttpStatus.UNPROCESSABLE_ENTITY,
-        errors: { saleStart: 'saleStart must be before saleEnd' },
-      });
-    }
+    assertSaleWindowBeforeEventStart(
+      resolvedSaleStart,
+      resolvedSaleEnd,
+      event.startTime,
+    );
 
     const newTotalQty = dto.totalQty ?? ticketType.totalQty;
     const newSoldQty = ticketType.soldQty;

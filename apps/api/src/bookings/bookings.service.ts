@@ -529,4 +529,93 @@ export class BookingsService {
       throw new BookingExpiredException();
     }
   }
+
+  /**
+   * Called when an event is cancelled by the organizer.
+   * Cancels all PAID bookings, refunds them via Stripe, and notifies customers.
+   */
+  async cancelEventBookings(eventId: string): Promise<void> {
+    const items = await this.dataSource.getRepository(BookingItemEntity).find({
+      where: { ticketType: { eventId } },
+      relations: ['ticketType'],
+    });
+    if (!items.length) return;
+    const bookingIds = [...new Set(items.map((i) => i.bookingId))];
+    const bookings = await this.dataSource
+      .getRepository(BookingEntity)
+      .createQueryBuilder('b')
+      .where('b.id IN (:...bookingIds)', { bookingIds })
+      .andWhere('b.status = :status', { status: BookingStatusEnum.PAID })
+      .getMany();
+
+    for (const bk of bookings) {
+      try {
+        await this.dataSource.transaction(async (manager) => {
+          const lockedBk = await manager
+            .createQueryBuilder(BookingEntity, 'b')
+            .setLock('pessimistic_write')
+            .where('b.id = :id', { id: bk.id })
+            .getOne();
+          if (!lockedBk || lockedBk.status !== BookingStatusEnum.PAID) return;
+
+          const bkItems = await manager.find(BookingItemEntity, {
+            where: { bookingId: bk.id },
+            loadEagerRelations: false,
+          });
+
+          // Cancel tickets
+          if (bkItems.length > 0) {
+            await manager
+              .createQueryBuilder()
+              .update(TicketEntity)
+              .set({ status: TicketStatusEnum.CANCELLED })
+              .where('bookingItemId IN (:...itemIds)', {
+                itemIds: bkItems.map((i) => i.id),
+              })
+              .execute();
+          }
+
+          // Issue Stripe refund
+          const payment = await manager.findOne(PaymentEntity, {
+            where: { bookingId: bk.id },
+          });
+          if (
+            payment &&
+            payment.status === PaymentStatusEnum.SUCCEEDED &&
+            payment.amount > 0 &&
+            !payment.stripePaymentIntentId.startsWith('free_')
+          ) {
+            const refund = await this.stripe.refunds.create(
+              { payment_intent: payment.stripePaymentIntentId },
+              { idempotencyKey: `bulk-refund-${bk.id}` },
+            );
+            payment.stripeRefundId = refund.id;
+            payment.refundedAt = new Date();
+            payment.status = PaymentStatusEnum.REFUNDED;
+            await manager.save(payment);
+          } else if (
+            payment &&
+            payment.status === PaymentStatusEnum.SUCCEEDED
+          ) {
+            payment.status = PaymentStatusEnum.REFUNDED;
+            payment.refundedAt = new Date();
+            await manager.save(payment);
+          }
+
+          await manager.update(BookingEntity, bk.id, {
+            status: BookingStatusEnum.REFUNDED,
+          });
+        });
+
+        // Send email
+        await this.sendCancellationEmail(bk.id, bk.customerId.toString());
+      } catch (err) {
+        this.logger.error(
+          `Failed to cancel booking ${bk.id} during event cancellation`,
+          err,
+        );
+      }
+    }
+  }
 }
+

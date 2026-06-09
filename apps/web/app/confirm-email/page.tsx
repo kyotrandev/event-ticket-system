@@ -15,19 +15,19 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 
-type Status = 'verifying' | 'success' | 'error';
-
 function ConfirmEmailContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const hash = searchParams.get('hash');
-  const [status, setStatus] = useState<Status>('verifying');
-  const [errorMsg, setErrorMsg] = useState('');
+  const [status, setStatus] = useState<'loading' | 'success' | 'error'>(() => {
+    return hash ? 'loading' : 'error';
+  });
+  const [errorMsg, setErrorMsg] = useState<string>(() => {
+    return hash ? '' : 'Invalid verification link. No hash parameter found.';
+  });
 
   useEffect(() => {
     if (!hash) {
-      setStatus('error');
-      setErrorMsg('Invalid verification link. No hash parameter found.');
       return;
     }
 
@@ -51,12 +51,12 @@ function ConfirmEmailContent() {
       <Card>
         <CardHeader>
           <CardTitle>
-            {status === 'verifying' && 'Verifying your email…'}
+            {status === 'loading' && 'Verifying your email…'}
             {status === 'success' && '✅ Email verified!'}
             {status === 'error' && '❌ Verification failed'}
           </CardTitle>
           <CardDescription>
-            {status === 'verifying' &&
+            {status === 'loading' &&
               'Please wait while we confirm your email address.'}
             {status === 'success' &&
               'Your email has been confirmed. You can now log in to your account.'}
@@ -64,7 +64,7 @@ function ConfirmEmailContent() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {status === 'verifying' && (
+          {status === 'loading' && (
             <div className="flex justify-center py-8">
               <div className="border-primary h-8 w-8 animate-spin rounded-full border-4 border-t-transparent" />
             </div>

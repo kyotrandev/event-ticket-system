@@ -16,10 +16,14 @@ import { EventStatusEnum } from './event-status.enum';
 import { NullableType } from '../utils/types/nullable.type';
 import { InfinityPaginationResponseDto } from '../utils/dto/infinity-pagination-response.dto';
 import { infinityPagination } from '../utils/infinity-pagination';
+import { BookingsService } from '../bookings/bookings.service';
 
 @Injectable()
 export class EventsService {
-  constructor(private readonly eventRepository: EventRepository) {}
+  constructor(
+    private readonly eventRepository: EventRepository,
+    private readonly bookingsService: BookingsService,
+  ) {}
 
   async create(organizerId: string, dto: CreateEventDto): Promise<Event> {
     const now = new Date();
@@ -202,7 +206,18 @@ export class EventsService {
       });
     }
 
-    return this.eventRepository.updateStatus(id, newStatus);
+    const updatedEvent = await this.eventRepository.updateStatus(id, newStatus);
+    
+    // Trigger bulk refund if event is cancelled
+    if (newStatus === EventStatusEnum.CANCELLED) {
+      // Run asynchronously so it doesn't block the request for large events
+      this.bookingsService.cancelEventBookings(id).catch((err) => {
+        // Just log, we don't want to crash the app
+        console.error('Failed to process bulk cancellation:', err);
+      });
+    }
+    
+    return updatedEvent;
   }
 
   async remove(

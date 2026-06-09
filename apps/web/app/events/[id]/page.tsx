@@ -39,6 +39,13 @@ function remaining(t: TicketType): number {
   return Math.max(0, t.totalQty - t.soldQty - t.reservedQty);
 }
 
+function formatLocalDateTime(value: string): string {
+  return new Date(value).toLocaleString('vi-VN', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  });
+}
+
 export default function EventDetailPage({
   params,
 }: {
@@ -227,7 +234,7 @@ export default function EventDetailPage({
                           : closed
                             ? 'Sales closed'
                             : upcoming
-                              ? `Sales open ${new Date(t.saleStart).toLocaleDateString('vi-VN')}`
+                              ? `Sales open ${formatLocalDateTime(t.saleStart)}`
                               : `${left} remaining`}
                       </CardDescription>
                     </div>

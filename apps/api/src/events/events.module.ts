@@ -4,12 +4,14 @@ import { EventsService } from './events.service';
 import { RelationalEventPersistenceModule } from './infrastructure/persistence/relational/relational-persistence.module';
 import { EventStaffAssignmentsModule } from '../event-staff-assignments/event-staff-assignments.module';
 import { AnalyticsModule } from '../analytics/analytics.module';
+import { BookingsModule } from '../bookings/bookings.module';
 
 @Module({
   imports: [
     RelationalEventPersistenceModule,
     EventStaffAssignmentsModule,
     AnalyticsModule,
+    BookingsModule,
   ],
   controllers: [EventsController],
   providers: [EventsService],
