@@ -207,7 +207,7 @@ export class EventsService {
     }
 
     const updatedEvent = await this.eventRepository.updateStatus(id, newStatus);
-    
+
     // Trigger bulk refund if event is cancelled
     if (newStatus === EventStatusEnum.CANCELLED) {
       // Run asynchronously so it doesn't block the request for large events
@@ -216,7 +216,7 @@ export class EventsService {
         console.error('Failed to process bulk cancellation:', err);
       });
     }
-    
+
     return updatedEvent;
   }
 
