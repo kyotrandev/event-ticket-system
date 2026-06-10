@@ -7,7 +7,6 @@ import { organizerApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { RoleId } from '@/lib/types';
 import type { EventModel } from '@/lib/types';
-import { Badge } from '@/components/ui/badge';
 import { buttonVariants } from '@/components/ui/button';
 
 const STATUS_COLORS: Record<string, string> = {

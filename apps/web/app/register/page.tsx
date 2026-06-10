@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/card';
 
 export default function RegisterPage() {
-  const { register, login } = useAuth();
+  const { register } = useAuth();
   const router = useRouter();
   const [form, setForm] = useState({
     firstName: '',

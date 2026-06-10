@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { waitlistApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import type { WaitlistEntry } from '@/lib/types';
 
 const STATUS_COLORS: Record<string, string> = {

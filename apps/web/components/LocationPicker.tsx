@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
@@ -113,7 +113,7 @@ export function LocationPicker({ value, onChange }: Props) {
       } else {
         toast.error('Location not found. Please try a different query or pick manually on the map.');
       }
-    } catch (e) {
+    } catch {
       toast.error('Failed to search for location.');
     } finally {
       setIsSearching(false);

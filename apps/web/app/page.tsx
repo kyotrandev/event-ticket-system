@@ -3,11 +3,11 @@
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { motion } from "framer-motion";
-import { ArrowRight, Ticket, CalendarDays, Zap, Star, LayoutGrid, Users, ShieldCheck, Heart } from "lucide-react";
+import { motion, type Variants } from "framer-motion";
+import { ArrowRight, Zap, Star, LayoutGrid, Users, ShieldCheck, Heart } from "lucide-react";
 
 export default function Home() {
-  const container = {
+  const container: Variants = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
@@ -17,7 +17,7 @@ export default function Home() {
     },
   };
 
-  const item = {
+  const item: Variants = {
     hidden: { opacity: 0, y: 30, scale: 0.95 },
     show: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", bounce: 0.5, duration: 0.8 } },
   };

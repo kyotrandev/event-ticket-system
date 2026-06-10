@@ -79,6 +79,7 @@ export default function CheckInPage() {
   const scanningRef = useRef(false);
   const lastCodeRef = useRef<string | null>(null);
   const cooldownRef = useRef(false);
+  const scanLoopRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     if (!authLoading && user && user.role?.id !== RoleId.Staff) {
@@ -121,8 +122,7 @@ export default function CheckInPage() {
     const video = videoRef.current;
     const canvas = canvasRef.current;
     if (!video || !canvas || video.readyState < video.HAVE_ENOUGH_DATA) {
-      // eslint-disable-next-line react-hooks/immutability
-      requestAnimationFrame(scanLoop);
+      requestAnimationFrame(() => scanLoopRef.current());
       return;
     }
     canvas.width = video.videoWidth;
@@ -143,9 +143,12 @@ export default function CheckInPage() {
         // not our QR format, ignore
       }
     }
-    // eslint-disable-next-line react-hooks/immutability
-    requestAnimationFrame(scanLoop);
+    requestAnimationFrame(() => scanLoopRef.current());
   }, [handleScanResult]);
+
+  useEffect(() => {
+    scanLoopRef.current = scanLoop;
+  }, [scanLoop]);
 
   const startCamera = useCallback(async () => {
     try {
