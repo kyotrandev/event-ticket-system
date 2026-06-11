@@ -52,4 +52,12 @@ export class QueryEventDto {
   @IsString()
   @IsOptional()
   status?: string;
+
+  @ApiPropertyOptional({
+    enum: ['createdAt', 'startTime', 'revenue', 'sold', 'name'],
+    default: 'createdAt',
+  })
+  @IsString()
+  @IsOptional()
+  sort?: string;
 }

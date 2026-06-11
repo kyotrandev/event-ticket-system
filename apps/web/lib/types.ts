@@ -103,6 +103,35 @@ export interface EventQuery {
   dateTo?: string;
   location?: string;
   status?: EventStatus | '';
+  sort?: 'createdAt' | 'startTime' | 'revenue' | 'sold' | 'name';
+}
+
+export interface OrganizerStats {
+  totalEvents: number;
+  liveNow: number;
+  totalRevenue: number;
+  totalTicketsSold: number;
+  draftCount: number;
+  upcomingCount: number;
+}
+
+export interface OrganizerEventSummary extends EventModel {
+  ticketsSold: number;
+  totalCapacity: number;
+  revenue: number;
+  checkInRate: number;
+  ticketTypeCount: number;
+  staffCount: number;
+}
+
+export interface EventAttendee {
+  id: string;
+  code: string;
+  status: TicketStatus;
+  createdAt: string;
+  ticketTypeName?: string;
+  customerName: string;
+  customerEmail: string;
 }
 
 export interface BookingItem {

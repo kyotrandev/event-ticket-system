@@ -2,13 +2,10 @@
 
 import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { organizerApi } from '@/lib/api';
-import { useAuth } from '@/lib/auth-context';
-import { RoleId } from '@/lib/types';
+import { EventHubNav } from '@/components/organizer/event-hub-nav';
 import type { EventAnalytics } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { buttonVariants } from '@/components/ui/button';
 
 function fmtVnd(n: number) {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
@@ -33,23 +30,12 @@ export default function EventAnalyticsPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const { user, loading: authLoading } = useAuth();
-  const router = useRouter();
   const [analytics, setAnalytics] = useState<EventAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!authLoading && user) {
-      const role = user.role?.id;
-      if (role !== RoleId.Organizer && role !== RoleId.Admin) {
-        router.replace('/');
-      }
-    }
-  }, [authLoading, user, router]);
-
-  useEffect(() => {
-    if (!authLoading && user && id) {
+    if (id) {
       organizerApi
         .getAnalytics(id)
         .then(setAnalytics)
@@ -58,9 +44,9 @@ export default function EventAnalyticsPage({
         )
         .finally(() => setLoading(false));
     }
-  }, [authLoading, user, id]);
+  }, [id]);
 
-  if (authLoading || loading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <span className="text-muted-foreground">Loading…</span>
@@ -79,16 +65,17 @@ export default function EventAnalyticsPage({
     : 0;
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 space-y-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Event Analytics</h1>
+    <div className="space-y-8">
+      <div>
         <Link
           href="/organizer/events"
-          className={buttonVariants({ variant: 'outline', size: 'sm' })}
+          className="text-sm font-bold text-muted-foreground hover:text-primary"
         >
           ← My Events
         </Link>
+        <h1 className="text-2xl font-extrabold mt-2">Analytics</h1>
       </div>
+      <EventHubNav eventId={id} />
 
       {error && (
         <div className="rounded-lg bg-destructive/10 text-destructive p-3 text-sm">{error}</div>
