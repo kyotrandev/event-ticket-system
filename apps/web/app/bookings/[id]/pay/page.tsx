@@ -34,12 +34,17 @@ function formatVnd(amount: number): string {
 }
 
 // Module-level stable refs — no useCallback needed, no closure over component state.
+let currentNow = Date.now();
 function subscribeToTimer(cb: () => void) {
-  const id = setInterval(cb, 1000);
+  currentNow = Date.now();
+  const id = setInterval(() => {
+    currentNow = Date.now();
+    cb();
+  }, 1000);
   return () => clearInterval(id);
 }
 function getTimerSnapshot() {
-  return Date.now();
+  return currentNow;
 }
 
 function useCountdown(expiresAt: string | null) {
