@@ -61,6 +61,19 @@ export class AuditLogsService {
     });
   }
 
+  async findPaginated(
+    page: number,
+    limit: number,
+  ): Promise<{ data: AuditLog[]; hasNextPage: boolean }> {
+    const cappedLimit = Math.min(limit, 100);
+    const rows = await this.findAllWithPagination({
+      paginationOptions: { page, limit: cappedLimit + 1 },
+    });
+    const hasNextPage = rows.length > cappedLimit;
+    const data = hasNextPage ? rows.slice(0, cappedLimit) : rows;
+    return { data, hasNextPage };
+  }
+
   findById(id: AuditLog['id']) {
     return this.auditLogRepository.findById(id);
   }

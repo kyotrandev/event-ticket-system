@@ -19,7 +19,16 @@ export class CheckInLogRelationalRepository {
     staffId: string;
     method: CheckInMethodEnum;
   }): Promise<CheckInLog> {
-    const entity = this.repo.create(data);
+    let entity = await this.repo.findOne({
+      where: { ticketId: data.ticketId },
+    });
+    if (entity) {
+      entity.staffId = data.staffId;
+      entity.method = data.method;
+      entity.scannedAt = new Date();
+    } else {
+      entity = this.repo.create(data);
+    }
     return CheckInLogMapper.toDomain(await this.repo.save(entity));
   }
 

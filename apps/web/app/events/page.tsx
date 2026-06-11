@@ -20,7 +20,10 @@ export default function EventsPage() {
   // Committed filters that actually drive the query (form state is separate).
   const [keyword, setKeyword] = useState('');
   const [category, setCategory] = useState('');
-  const [search, setSearch] = useState({ keyword: '', category: '' });
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [status, setStatus] = useState<string>('');
+  const [search, setSearch] = useState({ keyword: '', category: '', dateFrom: '', dateTo: '', status: '' });
 
   // Refetch whenever page or committed filters change. State updates live in
   // the async closure, off the effect body.
@@ -36,6 +39,9 @@ export default function EventsPage() {
             limit: PAGE_SIZE,
             keyword: search.keyword || undefined,
             category: search.category || undefined,
+            dateFrom: search.dateFrom ? new Date(search.dateFrom).toISOString() : undefined,
+            dateTo: search.dateTo ? new Date(search.dateTo).toISOString() : undefined,
+            status: search.status || undefined,
           },
           false,
         );
@@ -46,7 +52,8 @@ export default function EventsPage() {
       } catch {
         if (!cancelled) setError('Could not load events. Is the API running?');
       } finally {
-        if (!cancelled) setLoading(false);
+        if (cancelled) return;
+        setLoading(false);
       }
     })();
     return () => {
@@ -58,15 +65,15 @@ export default function EventsPage() {
   useEffect(() => {
     const handler = setTimeout(() => {
       setPage(1);
-      setSearch({ keyword, category });
+      setSearch({ keyword, category, dateFrom, dateTo, status });
     }, 500);
     return () => clearTimeout(handler);
-  }, [keyword, category]);
+  }, [keyword, category, dateFrom, dateTo, status]);
 
   function onSearch(e: React.FormEvent) {
     e.preventDefault();
     setPage(1);
-    setSearch({ keyword, category });
+    setSearch({ keyword, category, dateFrom, dateTo, status });
   }
 
   return (
@@ -82,24 +89,63 @@ export default function EventsPage() {
 
       <form
         onSubmit={onSearch}
-        className="mb-12 flex flex-col gap-4 sm:flex-row p-6 bg-muted/50 rounded-3xl"
+        className="mb-12 flex flex-col gap-4 p-6 bg-muted/50 rounded-3xl"
       >
-        <Input
-          placeholder="Search by name or description…"
-          value={keyword}
-          onChange={(e) => setKeyword(e.target.value)}
-          className="h-14 text-lg rounded-2xl border-2 border-border focus-visible:ring-primary focus-visible:border-primary shadow-sm"
-        />
-        <Input
-          placeholder="Category"
-          className="sm:max-w-[200px] h-14 text-lg rounded-2xl border-2 border-border focus-visible:ring-primary focus-visible:border-primary shadow-sm"
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-        />
-        <Button type="submit" size="lg" className="h-14 text-lg rounded-2xl px-8 shadow-sm">
-          <Search className="size-5 mr-2" />
-          Search
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-4 w-full">
+          <Input
+            placeholder="Search by name or description…"
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            className="h-14 text-lg rounded-2xl border-2 border-border focus-visible:ring-primary focus-visible:border-primary shadow-sm flex-1"
+          />
+          <Button type="submit" size="lg" className="h-14 text-lg rounded-2xl px-8 shadow-sm w-full sm:w-auto">
+            <Search className="size-5 mr-2" />
+            Search
+          </Button>
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 w-full">
+          <Input
+            placeholder="Category (e.g. Music, Tech)"
+            className="h-14 text-lg rounded-2xl border-2 border-border focus-visible:ring-primary focus-visible:border-primary shadow-sm"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          />
+          
+          <div className="relative">
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              className="flex h-14 w-full items-center justify-between rounded-2xl border-2 border-border bg-background px-3 py-2 text-lg ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus-visible:border-primary disabled:cursor-not-allowed disabled:opacity-50 appearance-none shadow-sm"
+            >
+              <option value="">Any Status</option>
+              <option value="published">Upcoming</option>
+              <option value="ongoing">Live Now</option>
+              <option value="ended">Ended</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-muted-foreground">
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
+
+          <Input
+            type="date"
+            className="h-14 text-lg rounded-2xl border-2 border-border focus-visible:ring-primary focus-visible:border-primary shadow-sm"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            title="Events starting on or after this date"
+          />
+          <Input
+            type="date"
+            className="h-14 text-lg rounded-2xl border-2 border-border focus-visible:ring-primary focus-visible:border-primary shadow-sm"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            title="Events ending on or before this date"
+          />
+        </div>
       </form>
 
       {loading ? (

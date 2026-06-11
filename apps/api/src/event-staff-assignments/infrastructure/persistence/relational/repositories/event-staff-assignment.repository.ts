@@ -27,6 +27,11 @@ export class EventStaffAssignmentRelationalRepository {
     return entities.map(EventStaffAssignmentMapper.toDomain);
   }
 
+  async findByStaff(staffId: string): Promise<EventStaffAssignment[]> {
+    const entities = await this.repo.find({ where: { staffId } });
+    return entities.map(EventStaffAssignmentMapper.toDomain);
+  }
+
   async findOne(
     eventId: string,
     staffId: string,

@@ -25,6 +25,8 @@ import {
 } from '@nestjs/swagger';
 import { Booking } from './domain/booking';
 import { AuthGuard } from '@nestjs/passport';
+import { RolesGuard } from '../roles/roles.guard';
+import { Roles } from '../roles/roles.decorator';
 import { RoleEnum } from '../roles/roles.enum';
 import { JwtPayloadType } from '../auth/strategies/types/jwt-payload.type';
 import { FindAllBookingsDto } from './dto/find-all-bookings.dto';
@@ -40,6 +42,8 @@ export class BookingsController {
   constructor(private readonly bookingsService: BookingsService) {}
 
   @Post()
+  @UseGuards(RolesGuard)
+  @Roles(RoleEnum.customer)
   @HttpCode(HttpStatus.CREATED)
   @SerializeOptions({ groups: [] })
   @ApiCreatedResponse({ type: Booking })
@@ -51,6 +55,8 @@ export class BookingsController {
   }
 
   @Get('me')
+  @UseGuards(RolesGuard)
+  @Roles(RoleEnum.customer)
   @HttpCode(HttpStatus.OK)
   @SerializeOptions({ groups: [] })
   @ApiOkResponse({ type: [Booking] })
@@ -77,17 +83,26 @@ export class BookingsController {
       id,
       String(req.user.id),
       isAdmin,
+      req.user.role?.id ? Number(req.user.role.id) : undefined,
     );
   }
 
   @Delete(':id')
+  @UseGuards(RolesGuard)
+  @Roles(RoleEnum.customer, RoleEnum.organizer, RoleEnum.admin)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiParam({ name: 'id', type: String, required: true })
-  @ApiNoContentResponse({ description: 'Booking cancelled and refund issued' })
+  @ApiNoContentResponse({
+    description:
+      'Pending booking released or paid booking cancelled with refund',
+  })
   cancel(
     @Param('id', ParseUUIDPipe) id: string,
     @Request() req: { user: JwtPayloadType },
   ): Promise<void> {
-    return this.bookingsService.cancel(id, String(req.user.id));
+    return this.bookingsService.cancel(id, String(req.user.id), {
+      roleId: req.user.role?.id ? Number(req.user.role.id) : undefined,
+      isAdmin: req.user.role?.id === RoleEnum.admin,
+    });
   }
 }

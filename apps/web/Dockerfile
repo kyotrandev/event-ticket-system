@@ -36,4 +36,5 @@ USER nextjs
 EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
+ENV NODE_OPTIONS="--max-old-space-size=256"
 CMD ["node", "server.js"]

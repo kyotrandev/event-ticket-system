@@ -79,6 +79,7 @@ export default function CheckInPage() {
   const scanningRef = useRef(false);
   const lastCodeRef = useRef<string | null>(null);
   const cooldownRef = useRef(false);
+  const activeRef = useRef(false);
   const scanLoopRef = useRef<() => void>(() => {});
 
   useEffect(() => {
@@ -155,6 +156,11 @@ export default function CheckInPage() {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'environment' },
       });
+      // Guard against unmount or mode-change while getUserMedia was awaiting
+      if (!activeRef.current) {
+        stream.getTracks().forEach((t) => t.stop());
+        return;
+      }
       setCameraError(null);
       streamRef.current = stream;
       if (videoRef.current) {
@@ -170,12 +176,17 @@ export default function CheckInPage() {
 
   useEffect(() => {
     if (mode === 'qr') {
+      activeRef.current = true;
       // eslint-disable-next-line react-hooks/set-state-in-effect
       void startCamera();
     } else {
+      activeRef.current = false;
       stopCamera();
     }
-    return () => stopCamera();
+    return () => {
+      activeRef.current = false;
+      stopCamera();
+    };
   }, [mode, startCamera, stopCamera]);
 
   const handleManual = async () => {

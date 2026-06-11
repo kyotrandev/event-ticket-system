@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
@@ -55,6 +55,10 @@ export function LocationPicker({ value, onChange }: Props) {
   const [showSuggestions, setShowSuggestions] = useState(false);
   
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); };
+  }, []);
 
   const handleUpdate = (newAddress: string, newPos: {lat: number, lng: number} | null) => {
     setAddress(newAddress);

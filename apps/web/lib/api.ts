@@ -238,6 +238,10 @@ export const paymentApi = {
 
 export const ticketApi = {
   findMine: () => api.get<Ticket[]>('/tickets/me'),
+  findByBooking: (bookingId: string) =>
+    api.get<Ticket[]>(`/tickets/booking/${bookingId}`),
+  getDetails: (id: string) =>
+    api.get<import('./types').TicketDetails>(`/tickets/${id}/details`),
   getQrBlob: async (code: string): Promise<string> => {
     const token = tokenStore.get();
     const res = await fetch(
@@ -287,6 +291,15 @@ export const staffApi = {
 
   remove: (eventId: string, staffId: string) =>
     api.delete<void>(`/events/${eventId}/staff/${staffId}`),
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  getMyAssignments: () => api.get<any[]>('/events/staff/assignments'),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  getAttendees: (eventId: string) => api.get<any[]>(`/tickets/events/${eventId}/attendees`),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  getTicketDetails: (ticketId: string) => api.get<any>(`/tickets/${ticketId}/details`),
+  updateTicketStatus: (ticketId: string, status: string) => 
+    api.patch(`/tickets/${ticketId}/status`, { status }),
 };
 
 // --- Waitlist endpoints ---
@@ -333,6 +346,8 @@ export const adminApi = {
       limit,
     }),
 
+  getPromoCode: (id: string) => api.get<PromoCode>(`/promo-codes/${id}`),
+
   createPromoCode: (dto: {
     code: string;
     discountType: string;
@@ -349,21 +364,136 @@ export const adminApi = {
   ) => api.patch<PromoCode>(`/promo-codes/${id}`, dto),
 
   deletePromoCode: (id: string) => api.delete<void>(`/promo-codes/${id}`),
+
+  getBookings: (query?: {
+    page?: number;
+    limit?: number;
+    eventId?: string;
+    status?: string;
+    keyword?: string;
+    organizerId?: string;
+  }) =>
+    api.get<{ data: import('./types').AdminBookingSummary[]; hasNextPage: boolean }>(
+      '/admin/bookings',
+      {
+        page: query?.page ?? 1,
+        limit: query?.limit ?? 20,
+        eventId: query?.eventId || undefined,
+        status: query?.status || undefined,
+        keyword: query?.keyword || undefined,
+        organizerId: query?.organizerId || undefined,
+      },
+    ),
+
+  getTickets: (query?: {
+    page?: number;
+    limit?: number;
+    eventId?: string;
+    status?: string;
+    keyword?: string;
+    organizerId?: string;
+  }) =>
+    api.get<{ data: import('./types').AdminTicketSummary[]; hasNextPage: boolean }>(
+      '/admin/tickets',
+      {
+        page: query?.page ?? 1,
+        limit: query?.limit ?? 20,
+        eventId: query?.eventId || undefined,
+        status: query?.status || undefined,
+        keyword: query?.keyword || undefined,
+        organizerId: query?.organizerId || undefined,
+      },
+    ),
+
+  getUser: (id: number | string) =>
+    api.get<import('./types').User>(`/users/${id}`),
+
+  getEvents: (query?: import('./types').EventQuery & { organizerId?: string }) =>
+    api.get<{ data: import('./types').AdminEventSummary[]; hasNextPage: boolean }>(
+      '/admin/events',
+      {
+        page: query?.page ?? 1,
+        limit: query?.limit ?? 12,
+        keyword: query?.keyword || undefined,
+        category: query?.category || undefined,
+        dateFrom: query?.dateFrom || undefined,
+        dateTo: query?.dateTo || undefined,
+        status: query?.status || undefined,
+        sort: query?.sort || undefined,
+        organizerId: query?.organizerId || undefined,
+      },
+    ),
+
+  getAuditLogs: (page = 1, limit = 30) =>
+    api.get<{ data: import('./types').AuditLogEntry[]; hasNextPage: boolean }>(
+      '/admin/audit-logs',
+      { page, limit },
+    ),
 };
 
 // --- Organizer endpoints ---
 export const organizerApi = {
-  getEvents: (page = 1, limit = 20) =>
-    api.get<{ data: import('./types').EventModel[]; hasNextPage: boolean }>(
-      '/events/my',
-      {
-        page,
-        limit,
-      },
-    ),
+  getStats: () => api.get<import('./types').OrganizerStats>('/events/my/stats'),
+
+  getEvents: (query?: import('./types').EventQuery) =>
+    api.get<{
+      data: import('./types').OrganizerEventSummary[];
+      hasNextPage: boolean;
+    }>('/events/my', {
+      page: query?.page ?? 1,
+      limit: query?.limit ?? 12,
+      keyword: query?.keyword || undefined,
+      category: query?.category || undefined,
+      dateFrom: query?.dateFrom || undefined,
+      dateTo: query?.dateTo || undefined,
+      status: query?.status || undefined,
+      sort: query?.sort || undefined,
+    }),
 
   getAnalytics: (eventId: string) =>
     api.get<EventAnalytics>(`/events/${eventId}/analytics`),
+
+  duplicateEvent: (eventId: string) =>
+    api.post<import('./types').EventModel>(`/events/${eventId}/duplicate`),
+
+  getAttendees: (eventId: string) =>
+    api.get<import('./types').EventAttendee[]>(
+      `/tickets/events/${eventId}/attendees`,
+    ),
+
+  getBookings: (query?: {
+    page?: number;
+    limit?: number;
+    eventId?: string;
+    status?: string;
+  }) =>
+    api.get<{
+      data: import('./types').OrganizerBookingSummary[];
+      hasNextPage: boolean;
+    }>('/events/my/bookings', {
+      page: query?.page ?? 1,
+      limit: query?.limit ?? 20,
+      eventId: query?.eventId || undefined,
+      status: query?.status || undefined,
+    }),
+
+  getTickets: (query?: {
+    page?: number;
+    limit?: number;
+    eventId?: string;
+    status?: string;
+    keyword?: string;
+  }) =>
+    api.get<{
+      data: import('./types').OrganizerTicketSummary[];
+      hasNextPage: boolean;
+    }>('/events/my/tickets', {
+      page: query?.page ?? 1,
+      limit: query?.limit ?? 20,
+      eventId: query?.eventId || undefined,
+      status: query?.status || undefined,
+      keyword: query?.keyword || undefined,
+    }),
 
   createEvent: (data: Partial<import('./types').EventModel>) =>
     api.post<import('./types').EventModel>('/events', data),

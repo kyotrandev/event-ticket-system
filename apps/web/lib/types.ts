@@ -29,6 +29,8 @@ export interface User {
   email: string | null;
   firstName: string | null;
   lastName: string | null;
+  companyName?: string | null;
+  phoneNumber?: string | null;
   provider?: string;
   photo?: { id: string; path: string } | null;
   role?: Role | null;
@@ -83,6 +85,7 @@ export interface TicketType {
   saleStart: string;
   saleEnd: string;
   status: TicketTypeStatus;
+  event?: EventModel;
   createdAt: string;
   updatedAt: string;
 }
@@ -101,6 +104,88 @@ export interface EventQuery {
   dateFrom?: string;
   dateTo?: string;
   location?: string;
+  status?: EventStatus | '';
+  sort?: 'createdAt' | 'startTime' | 'revenue' | 'sold' | 'name';
+}
+
+export interface OrganizerStats {
+  totalEvents: number;
+  liveNow: number;
+  totalRevenue: number;
+  totalTicketsSold: number;
+  draftCount: number;
+  upcomingCount: number;
+}
+
+export interface OrganizerEventSummary extends EventModel {
+  ticketsSold: number;
+  totalCapacity: number;
+  revenue: number;
+  checkInRate: number;
+  ticketTypeCount: number;
+  staffCount: number;
+}
+
+export interface OrganizerBookingSummary {
+  id: string;
+  customerId: string;
+  status: BookingStatus;
+  totalAmount: number;
+  ticketCount: number;
+  createdAt: string;
+  eventId: string;
+  eventName: string;
+  customerName: string;
+  customerEmail: string;
+}
+
+export interface OrganizerTicketSummary {
+  id: string;
+  code: string;
+  status: TicketStatus;
+  createdAt: string;
+  eventId: string;
+  eventName: string;
+  ticketTypeName: string | null;
+  customerName: string;
+  customerEmail: string;
+  bookingId: string | null;
+}
+
+export interface AdminBookingSummary extends OrganizerBookingSummary {
+  organizerName: string;
+  organizerEmail: string;
+}
+
+export interface AdminTicketSummary extends OrganizerTicketSummary {
+  organizerName: string;
+  organizerEmail: string;
+}
+
+export interface AdminEventSummary extends OrganizerEventSummary {
+  organizerName: string;
+  organizerEmail: string;
+}
+
+export interface AuditLogEntry {
+  id: string;
+  userId: string | null;
+  action: string;
+  entity: string;
+  entityId: string;
+  payload: Record<string, unknown> | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EventAttendee {
+  id: string;
+  code: string;
+  status: TicketStatus;
+  createdAt: string;
+  ticketTypeName?: string;
+  customerName: string;
+  customerEmail: string;
 }
 
 export interface BookingItem {
@@ -150,8 +235,46 @@ export interface Ticket {
   customerId: string;
   code: string;
   status: TicketStatus;
+  bookingItem?: BookingItem;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface TicketDetails {
+  id: string;
+  code: string;
+  status: TicketStatus;
+  createdAt: string;
+  ticketType?: TicketType;
+  event?: {
+    id: string;
+    name: string;
+    startTime: string;
+    endTime?: string;
+    location?: string;
+    bannerUrl?: string | null;
+  };
+  booking?: {
+    id: string;
+    createdAt: string;
+  };
+  customer?: {
+    id: number;
+    email: string;
+    firstName: string | null;
+    lastName: string | null;
+    phoneNumber?: string | null;
+  } | null;
+  checkIn?: {
+    scannedAt: string;
+    method: string;
+    staff?: {
+      id: number;
+      email: string;
+      firstName: string | null;
+      lastName: string | null;
+    } | null;
+  } | null;
 }
 
 // Phase 4 — Check-In
@@ -218,6 +341,12 @@ export interface EventAnalytics {
   topPromoCodes: TopPromoCode[];
 }
 
+export interface AdminDailyStat {
+  date: string;
+  bookings: number;
+  revenue: number;
+}
+
 export interface AdminStats {
   users: {
     admin: number;
@@ -242,6 +371,11 @@ export interface AdminStats {
   };
   totalGrossRevenue: number;
   totalRefunds: number;
+  netRevenue: number;
+  pendingOrganizers: number;
+  totalTicketsSold: number;
+  liveEvents: number;
+  dailyStats: AdminDailyStat[];
 }
 
 export type PromoDiscountType = 'percent' | 'fixed';

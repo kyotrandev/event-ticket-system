@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { ticketTypeApi, organizerApi } from '@/lib/api';
 import { buttonVariants } from '@/components/ui/button';
+import { EventHubNav } from '@/components/organizer/event-hub-nav';
 import type { TicketType, EventModel } from '@/lib/types';
 
 export default function TicketTypesPage() {
@@ -45,18 +46,19 @@ export default function TicketTypesPage() {
   if (loading) return <div className="p-8 text-center text-muted-foreground">Loading...</div>;
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 space-y-6">
-      <div className="flex items-center justify-between mb-6">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between mb-2">
         <div>
-          <Link href="/organizer/events" className="text-sm text-muted-foreground hover:underline">
-            &larr; Back to Events
+          <Link href="/organizer/events" className="text-sm font-bold text-muted-foreground hover:text-primary">
+            &larr; My Events
           </Link>
-          <h1 className="text-2xl font-bold mt-2">Ticket Types - {event?.name}</h1>
+          <h1 className="text-2xl font-extrabold mt-2">Ticket types — {event?.name}</h1>
         </div>
         <Link href={`/organizer/events/${eventId}/ticket-types/create`} className={buttonVariants()}>
-          + Create Ticket Type
+          + Add ticket type
         </Link>
       </div>
+      {eventId && <EventHubNav eventId={eventId} />}
 
       {error && <div className="rounded-lg bg-destructive/10 text-destructive p-3 text-sm">{error}</div>}
 

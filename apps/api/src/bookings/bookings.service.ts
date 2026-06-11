@@ -34,6 +34,9 @@ import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { MailService } from '../mail/mail.service';
 import { WaitlistService } from '../waitlist/waitlist.service';
 import { UserEntity } from '../users/infrastructure/persistence/relational/entities/user.entity';
+import { RoleEnum } from '../roles/roles.enum';
+import { OrganizerBookingSummaryDto } from './dto/organizer-booking-summary.dto';
+import { InfinityPaginationResponseDto } from '../utils/dto/infinity-pagination-response.dto';
 
 export const BOOKING_EXPIRY_QUEUE = 'booking-expiry';
 export const BOOKING_HOLD_MINUTES = 15;
@@ -241,41 +244,75 @@ export class BookingsService {
   }
 
   /**
-   * Cancels a PAID booking, releases inventory, and issues a Stripe refund.
-   * Idempotent: REFUNDED bookings no-op. Only the booking owner may cancel.
+   * Cancels a booking (customer, event organizer, or admin).
+   * - PENDING_PAYMENT: releases reserved inventory (same as expiry), no refund.
+   * - PAID: Stripe refund + ticket cancellation.
+   * Idempotent: REFUNDED / EXPIRED no-op for repeat calls.
+   *
+   * Customers are subject to the event cancellation window; organizers and
+   * admins may cancel/refund at any time for bookings on their events.
    */
-  async cancel(bookingId: string, userId: string): Promise<void> {
+  async cancel(
+    bookingId: string,
+    userId: string,
+    options?: { roleId?: number; isAdmin?: boolean },
+  ): Promise<void> {
     const booking = await this.findByIdOrFail(bookingId);
-    if (booking.customerId !== userId) {
-      throw new ForbiddenException('Not your booking');
+    const roleId = options?.roleId;
+    const isAdmin = options?.isAdmin ?? false;
+    const isCustomer = booking.customerId === String(userId);
+    const isOrganizer =
+      roleId === RoleEnum.organizer &&
+      (await this.isOrganizerBooking(bookingId, String(userId)));
+
+    if (!isAdmin && !isCustomer && !isOrganizer) {
+      throw new ForbiddenException('Not allowed to cancel this booking');
     }
-    if (booking.status === BookingStatusEnum.REFUNDED) return; // already cancelled
+
+    const skipCancellationWindow = isAdmin || isOrganizer;
+
+    if (
+      booking.status === BookingStatusEnum.REFUNDED ||
+      booking.status === BookingStatusEnum.EXPIRED
+    ) {
+      return;
+    }
+
+    if (booking.status === BookingStatusEnum.PENDING_PAYMENT) {
+      await this.cancelPendingPayment(bookingId, userId, booking);
+      return;
+    }
+
     if (booking.status !== BookingStatusEnum.PAID) {
       throw new UnprocessableEntityException(
-        `Only PAID bookings can be cancelled (current: ${booking.status})`,
+        `Only PENDING_PAYMENT or PAID bookings can be cancelled (current: ${booking.status})`,
       );
     }
 
-    // Cancellation window check (SPEC US-5.1): event.startTime − now must exceed cancellationWindowHours.
-    const firstItem = await this.dataSource
-      .getRepository(BookingItemEntity)
-      .findOne({ where: { bookingId }, loadEagerRelations: false });
-    if (firstItem) {
-      const tt = await this.dataSource.getRepository(TicketTypeEntity).findOne({
-        where: { id: firstItem.ticketTypeId },
-        loadEagerRelations: false,
-      });
-      if (tt) {
-        const event = await this.dataSource
-          .getRepository(EventEntity)
-          .findOne({ where: { id: tt.eventId } });
-        if (event) {
-          const windowMs = event.cancellationWindowHours * 60 * 60 * 1000;
-          const timeUntilEventMs = event.startTime.getTime() - Date.now();
-          if (timeUntilEventMs <= windowMs) {
-            throw new ForbiddenException(
-              `Cancellation window has closed. No refunds available within ${event.cancellationWindowHours} hours of the event.`,
-            );
+    // Cancellation window (SPEC US-5.1) — customers only.
+    if (!skipCancellationWindow) {
+      const firstItem = await this.dataSource
+        .getRepository(BookingItemEntity)
+        .findOne({ where: { bookingId }, loadEagerRelations: false });
+      if (firstItem) {
+        const tt = await this.dataSource
+          .getRepository(TicketTypeEntity)
+          .findOne({
+            where: { id: firstItem.ticketTypeId },
+            loadEagerRelations: false,
+          });
+        if (tt) {
+          const event = await this.dataSource
+            .getRepository(EventEntity)
+            .findOne({ where: { id: tt.eventId } });
+          if (event) {
+            const windowMs = event.cancellationWindowHours * 60 * 60 * 1000;
+            const timeUntilEventMs = event.startTime.getTime() - Date.now();
+            if (timeUntilEventMs <= windowMs) {
+              throw new ForbiddenException(
+                `Cancellation window has closed. No refunds available within ${event.cancellationWindowHours} hours of the event.`,
+              );
+            }
           }
         }
       }
@@ -368,10 +405,15 @@ export class BookingsService {
         await this.auditLogsService.log(
           {
             userId,
-            action: 'booking.cancelled',
+            action: isOrganizer
+              ? 'booking.cancelled_by_organizer'
+              : 'booking.cancelled',
             entity: 'Booking',
             entityId: bookingId,
-            payload: { totalAmount: bk.totalAmount },
+            payload: {
+              totalAmount: bk.totalAmount,
+              customerId: bk.customerId,
+            },
           },
           manager,
         );
@@ -380,9 +422,9 @@ export class BookingsService {
       },
     );
 
-    // Side effects after commit
+    // Side effects after commit — email goes to the customer, not the actor.
     await Promise.allSettled([
-      this.sendCancellationEmail(bookingId, userId),
+      this.sendCancellationEmail(bookingId, booking.customerId),
       ...[...cancelledTicketTypeQty.entries()].map(([ticketTypeId, qty]) =>
         this.waitlistService.notifyNext(ticketTypeId, qty),
       ),
@@ -427,11 +469,50 @@ export class BookingsService {
     }
   }
 
+  /** Customer-initiated cancel while payment is still pending. */
+  private async cancelPendingPayment(
+    bookingId: string,
+    userId: string,
+    booking: Booking,
+  ): Promise<void> {
+    await this.removeExpiryJob(bookingId);
+    const expired = await this.expire(bookingId);
+    if (!expired) return;
+
+    const items = booking.items ?? [];
+    await this.auditLogsService.log({
+      userId,
+      action: 'booking.cancelled',
+      entity: 'Booking',
+      entityId: bookingId,
+      payload: {
+        reason: 'user_cancelled_pending',
+        totalAmount: booking.totalAmount,
+      },
+    });
+    await Promise.allSettled(
+      items.map((item) =>
+        this.waitlistService.notifyNext(item.ticketTypeId, item.quantity),
+      ),
+    );
+  }
+
+  private async removeExpiryJob(bookingId: string): Promise<void> {
+    try {
+      const job = await this.expiryQueue.getJob(`expire-${bookingId}`);
+      if (job) await job.remove();
+    } catch (err) {
+      this.logger.warn(
+        `failed to remove expiry job for booking ${bookingId}: ${String(err)}`,
+      );
+    }
+  }
+
   /**
    * Expires a booking and releases held inventory (SPEC US-3.4).
    * Idempotent: only PENDING_PAYMENT bookings transition; re-runs no-op.
    */
-  async expire(bookingId: string): Promise<void> {
+  async expire(bookingId: string): Promise<boolean> {
     const expired = await this.dataSource.transaction(async (manager) => {
       const booking = await manager
         .createQueryBuilder(BookingEntity, 'b')
@@ -479,6 +560,200 @@ export class BookingsService {
         entityId: bookingId,
       });
     }
+    return expired;
+  }
+
+  async findByOrganizer(
+    organizerId: string,
+    page: number,
+    limit: number,
+    filters: { eventId?: string; status?: BookingStatusEnum },
+  ): Promise<InfinityPaginationResponseDto<OrganizerBookingSummaryDto>> {
+    const cappedLimit = Math.min(limit, 50);
+    const qb = this.dataSource
+      .getRepository(BookingEntity)
+      .createQueryBuilder('b')
+      .innerJoin('b.items', 'bi')
+      .innerJoin('bi.ticketType', 'tt')
+      .innerJoin('tt.event', 'e')
+      .where('e.organizerId = :organizerId', { organizerId })
+      .distinct(true)
+      .orderBy('b.createdAt', 'DESC')
+      .skip((page - 1) * cappedLimit)
+      .take(cappedLimit + 1);
+
+    if (filters.eventId) {
+      qb.andWhere('e.id = :eventId', { eventId: filters.eventId });
+    }
+    if (filters.status) {
+      qb.andWhere('b.status = :status', { status: filters.status });
+    }
+
+    const entities = await qb
+      .leftJoinAndSelect('b.items', 'items')
+      .leftJoinAndSelect('items.ticketType', 'ticketType')
+      .leftJoinAndSelect('ticketType.event', 'event')
+      .getMany();
+
+    const hasNextPage = entities.length > cappedLimit;
+    const pageData = hasNextPage ? entities.slice(0, cappedLimit) : entities;
+
+    const customerIds = [...new Set(pageData.map((b) => Number(b.customerId)))];
+    const users = customerIds.length
+      ? await this.dataSource.getRepository(UserEntity).find({
+          where: { id: In(customerIds) },
+        })
+      : [];
+    const userMap = new Map(users.map((u) => [String(u.id), u]));
+
+    const data: OrganizerBookingSummaryDto[] = pageData.map((b) => {
+      const firstItem = b.items?.[0];
+      const event = firstItem?.ticketType?.event;
+      const customer = userMap.get(String(b.customerId));
+      const ticketCount = (b.items ?? []).reduce((s, i) => s + i.quantity, 0);
+      return {
+        id: b.id,
+        customerId: b.customerId,
+        status: b.status,
+        totalAmount: b.totalAmount,
+        ticketCount,
+        createdAt: b.createdAt,
+        eventId: event?.id ?? firstItem?.ticketType?.eventId ?? '',
+        eventName: event?.name ?? 'Unknown event',
+        customerName: customer
+          ? `${customer.firstName ?? ''} ${customer.lastName ?? ''}`.trim() ||
+            (customer.email ?? 'Unknown')
+          : 'Unknown',
+        customerEmail: customer?.email ?? 'Unknown',
+      };
+    });
+
+    return { data, hasNextPage };
+  }
+
+  async findAllForAdmin(
+    page: number,
+    limit: number,
+    filters: {
+      eventId?: string;
+      status?: BookingStatusEnum;
+      keyword?: string;
+      organizerId?: string;
+    },
+  ): Promise<
+    InfinityPaginationResponseDto<
+      import('./dto/admin-booking-summary.dto').AdminBookingSummaryDto
+    >
+  > {
+    const cappedLimit = Math.min(limit, 50);
+    const qb = this.dataSource
+      .getRepository(BookingEntity)
+      .createQueryBuilder('b')
+      .innerJoin('b.items', 'bi')
+      .innerJoin('bi.ticketType', 'tt')
+      .innerJoin('tt.event', 'e')
+      .distinct(true)
+      .orderBy('b.createdAt', 'DESC')
+      .skip((page - 1) * cappedLimit)
+      .take(cappedLimit + 1);
+
+    if (filters.eventId) {
+      qb.andWhere('e.id = :eventId', { eventId: filters.eventId });
+    }
+    if (filters.organizerId) {
+      qb.andWhere('e.organizerId = :organizerId', {
+        organizerId: filters.organizerId,
+      });
+    }
+    if (filters.status) {
+      qb.andWhere('b.status = :status', { status: filters.status });
+    }
+    if (filters.keyword?.trim()) {
+      const kw = `%${filters.keyword.trim().toLowerCase()}%`;
+      qb.andWhere(
+        `(LOWER(e.name) LIKE :kw OR LOWER(b.id::text) LIKE :kw OR EXISTS (
+          SELECT 1 FROM "user" u
+          WHERE u.id = b."customerId"::int
+            AND (LOWER(u.email) LIKE :kw OR LOWER(u."firstName") LIKE :kw OR LOWER(u."lastName") LIKE :kw)
+        ))`,
+        { kw },
+      );
+    }
+
+    const entities = await qb
+      .leftJoinAndSelect('b.items', 'items')
+      .leftJoinAndSelect('items.ticketType', 'ticketType')
+      .leftJoinAndSelect('ticketType.event', 'event')
+      .getMany();
+
+    const hasNextPage = entities.length > cappedLimit;
+    const pageData = hasNextPage ? entities.slice(0, cappedLimit) : entities;
+
+    const customerIds = [...new Set(pageData.map((b) => Number(b.customerId)))];
+    const organizerIds = [
+      ...new Set(
+        pageData
+          .map((b) => b.items?.[0]?.ticketType?.event?.organizerId)
+          .filter(Boolean)
+          .map(String),
+      ),
+    ];
+    const allUserIds = [
+      ...new Set([...customerIds, ...organizerIds.map(Number)]),
+    ];
+    const users = allUserIds.length
+      ? await this.dataSource.getRepository(UserEntity).find({
+          where: { id: In(allUserIds) },
+        })
+      : [];
+    const userMap = new Map(users.map((u) => [String(u.id), u]));
+
+    const data = pageData.map((b) => {
+      const firstItem = b.items?.[0];
+      const event = firstItem?.ticketType?.event;
+      const customer = userMap.get(String(b.customerId));
+      const organizer = event?.organizerId
+        ? userMap.get(String(event.organizerId))
+        : undefined;
+      const ticketCount = (b.items ?? []).reduce((s, i) => s + i.quantity, 0);
+      return {
+        id: b.id,
+        customerId: b.customerId,
+        status: b.status,
+        totalAmount: b.totalAmount,
+        ticketCount,
+        createdAt: b.createdAt,
+        eventId: event?.id ?? firstItem?.ticketType?.eventId ?? '',
+        eventName: event?.name ?? 'Unknown event',
+        customerName: customer
+          ? `${customer.firstName ?? ''} ${customer.lastName ?? ''}`.trim() ||
+            (customer.email ?? 'Unknown')
+          : 'Unknown',
+        customerEmail: customer?.email ?? 'Unknown',
+        organizerName: organizer
+          ? `${organizer.firstName ?? ''} ${organizer.lastName ?? ''}`.trim() ||
+            (organizer.email ?? 'Unknown')
+          : 'Unknown',
+        organizerEmail: organizer?.email ?? 'Unknown',
+      };
+    });
+
+    return { data, hasNextPage };
+  }
+
+  async isOrganizerBooking(
+    bookingId: string,
+    organizerId: string,
+  ): Promise<boolean> {
+    const count = await this.dataSource
+      .getRepository(BookingItemEntity)
+      .createQueryBuilder('bi')
+      .innerJoin('bi.ticketType', 'tt')
+      .innerJoin('tt.event', 'e')
+      .where('bi.bookingId = :bookingId', { bookingId })
+      .andWhere('e.organizerId = :organizerId', { organizerId })
+      .getCount();
+    return count > 0;
   }
 
   async findMine(
@@ -491,6 +766,7 @@ export class BookingsService {
       order: { createdAt: 'DESC' },
       skip: (page - 1) * limit,
       take: limit,
+      relations: ['items', 'items.ticketType', 'items.ticketType.event'],
     });
     return entities.map(BookingMapper.toDomain);
   }
@@ -499,18 +775,24 @@ export class BookingsService {
     id: string,
     userId: string,
     isAdmin: boolean,
+    roleId?: number,
   ): Promise<Booking> {
     const booking = await this.findByIdOrFail(id);
-    if (!isAdmin && booking.customerId !== String(userId)) {
-      throw new ForbiddenException('Not your booking');
+    if (isAdmin || booking.customerId === String(userId)) {
+      return booking;
     }
-    return booking;
+    if (roleId === RoleEnum.organizer) {
+      const owns = await this.isOrganizerBooking(id, String(userId));
+      if (owns) return booking;
+    }
+    throw new ForbiddenException('Not your booking');
   }
 
   async findByIdOrFail(id: string): Promise<Booking> {
-    const entity = await this.dataSource
-      .getRepository(BookingEntity)
-      .findOne({ where: { id } });
+    const entity = await this.dataSource.getRepository(BookingEntity).findOne({
+      where: { id },
+      relations: ['items', 'items.ticketType', 'items.ticketType.event'],
+    });
     if (!entity) {
       throw new NotFoundException('Booking not found');
     }

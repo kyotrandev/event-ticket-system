@@ -1,18 +1,18 @@
 import type { Metadata } from "next";
-import { Nunito, JetBrains_Mono } from "next/font/google";
+import { Limelight, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 import { SiteHeader } from "@/components/site-header";
 import { Toaster } from "@/components/ui/sonner";
 
-const fontSans = Nunito({
-  variable: "--font-sans",
+const limelight = Limelight({
+  variable: "--font-limelight",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800", "900"],
+  weight: "400",
 });
 
-const fontMono = JetBrains_Mono({
-  variable: "--font-mono",
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains-mono",
   subsets: ["latin"],
 });
 
@@ -29,7 +29,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${fontSans.variable} ${fontMono.variable} h-full antialiased`}
+      className={`${limelight.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans">
         <AuthProvider>

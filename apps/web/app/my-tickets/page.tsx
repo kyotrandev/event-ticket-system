@@ -27,18 +27,18 @@ function QrImage({ code }: { code: string }) {
   const [src, setSrc] = useState<string | null>(null);
   const [err, setErr] = useState(false);
   const fetched = useRef(false);
+  const blobRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (fetched.current) return;
     fetched.current = true;
     ticketApi
       .getQrBlob(code)
-      .then(setSrc)
+      .then((url) => { blobRef.current = url; setSrc(url); })
       .catch(() => setErr(true));
     return () => {
-      if (src) URL.revokeObjectURL(src);
+      if (blobRef.current) URL.revokeObjectURL(blobRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code]);
 
   if (err) return <p className="text-muted-foreground text-xs">QR unavailable</p>;
@@ -73,8 +73,8 @@ export default function MyTicketsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
-      <h1 className="mb-6 text-2xl font-bold">My Tickets</h1>
+    <div className="mx-auto max-w-4xl px-4 py-8">
+      <h1 className="mb-6 text-3xl font-extrabold tracking-tight">My Tickets</h1>
 
       {tickets.length === 0 ? (
         <div className="space-y-3 text-center py-12">
@@ -86,25 +86,58 @@ export default function MyTicketsPage() {
       ) : (
         <div className="space-y-4">
           {tickets.map((t) => (
-            <Card key={t.id}>
-              <CardHeader>
-                <div className="flex items-start justify-between gap-4">
-                  <CardTitle className="text-base font-mono">{t.code}</CardTitle>
-                  <Badge variant={statusVariant(t.status)}>
-                    {t.status.toUpperCase()}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="flex items-start gap-4">
-                <QrImage code={t.code} />
-                <div className="text-sm space-y-1 text-muted-foreground">
-                  <p>
-                    Issued:{' '}
-                    {new Date(t.createdAt).toLocaleDateString('vi-VN')}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            <Link key={t.id} href={`/my-tickets/${t.code}`} className="block">
+              <Card className="hover:bg-muted/50 transition-colors cursor-pointer">
+                <CardHeader>
+                  <div className="flex items-start justify-between gap-4">
+                    <CardTitle className="text-base font-mono">{t.code}</CardTitle>
+                    <Badge variant={statusVariant(t.status)}>
+                      {t.status.toUpperCase()}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="flex flex-col sm:flex-row items-start gap-6 pt-4">
+                  <div className="shrink-0 bg-white p-2 rounded-xl shadow-sm border">
+                    <QrImage code={t.code} />
+                  </div>
+                  <div className="flex-1 w-full space-y-4">
+                    <div>
+                      <h3 className="font-semibold text-lg leading-tight">
+                        {t.bookingItem?.ticketType?.event?.name || 'Unknown Event'}
+                      </h3>
+                      <p className="text-muted-foreground text-sm mt-1">
+                        {t.bookingItem?.ticketType?.event?.location || 'Unknown Location'}
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 text-sm bg-muted/30 p-3 rounded-lg">
+                      <div>
+                        <p className="text-muted-foreground mb-1 text-xs uppercase tracking-wider font-semibold">Event Date</p>
+                        <p className="font-medium">
+                          {t.bookingItem?.ticketType?.event?.startTime
+                            ? new Date(t.bookingItem.ticketType.event.startTime).toLocaleDateString('vi-VN', {
+                                day: '2-digit',
+                                month: 'short',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })
+                            : 'TBA'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground mb-1 text-xs uppercase tracking-wider font-semibold">Ticket Type</p>
+                        <p className="font-medium">{t.bookingItem?.ticketType?.name || 'Standard'}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground mb-1 text-xs uppercase tracking-wider font-semibold">Issued Date</p>
+                        <p className="font-medium">{new Date(t.createdAt).toLocaleDateString('vi-VN')}</p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </div>
       )}

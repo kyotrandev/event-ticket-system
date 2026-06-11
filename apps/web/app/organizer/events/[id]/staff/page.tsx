@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import type { EventModel, EventStaffAssignment } from '@/lib/types';
+import { EventHubNav } from '@/components/organizer/event-hub-nav';
 
 export default function EventStaffPage() {
   const params = useParams();
@@ -115,20 +116,21 @@ export default function EventStaffPage() {
     );
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8 space-y-6">
-      <div className="flex items-center justify-between mb-6">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between mb-2">
         <div>
           <Link
             href="/organizer/events"
-            className="text-sm text-muted-foreground hover:underline"
+            className="text-sm font-bold text-muted-foreground hover:text-primary"
           >
-            &larr; Back to Events
+            &larr; My Events
           </Link>
-          <h1 className="text-2xl font-bold mt-2">
-            Manage Staff - {event?.name}
+          <h1 className="text-2xl font-extrabold mt-2">
+            Staff — {event?.name}
           </h1>
         </div>
       </div>
+      {eventId && <EventHubNav eventId={eventId} />}
 
       {error && (
         <div className="rounded-lg bg-destructive/10 text-destructive p-3 text-sm">

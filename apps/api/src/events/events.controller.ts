@@ -44,6 +44,14 @@ import { InviteStaffDto } from '../event-staff-assignments/dto/invite-staff.dto'
 import { UpdateStaffDto } from '../event-staff-assignments/dto/update-staff.dto';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { EventAnalyticsDto } from '../analytics/dto/event-analytics.dto';
+import { OrganizerStatsDto } from '../analytics/dto/organizer-stats.dto';
+import { OrganizerEventSummaryDto } from './dto/organizer-event-summary.dto';
+import { BookingsService } from '../bookings/bookings.service';
+import { TicketsService } from '../tickets/tickets.service';
+import { QueryOrganizerBookingsDto } from '../bookings/dto/query-organizer-bookings.dto';
+import { OrganizerBookingSummaryDto } from '../bookings/dto/organizer-booking-summary.dto';
+import { QueryOrganizerTicketsDto } from '../tickets/dto/query-organizer-tickets.dto';
+import { OrganizerTicketSummaryDto } from '../tickets/dto/organizer-ticket-summary.dto';
 
 @ApiTags('Events')
 @Controller({
@@ -55,6 +63,8 @@ export class EventsController {
     private readonly eventsService: EventsService,
     private readonly staffService: EventStaffAssignmentsService,
     private readonly analyticsService: AnalyticsService,
+    private readonly bookingsService: BookingsService,
+    private readonly ticketsService: TicketsService,
   ) {}
 
   @ApiCreatedResponse({ type: Event })
@@ -81,19 +91,93 @@ export class EventsController {
     return this.eventsService.findPublished(query);
   }
 
-  @ApiOkResponse({ type: InfinityPaginationResponse(Event) })
+  @ApiOkResponse({ type: OrganizerStatsDto })
   @ApiBearerAuth()
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(RoleEnum.organizer, RoleEnum.admin)
+  @Get('my/stats')
+  @HttpCode(HttpStatus.OK)
+  getMyStats(
+    @Request() req: { user: JwtPayloadType },
+  ): Promise<OrganizerStatsDto> {
+    return this.analyticsService.getOrganizerStats(String(req.user.id));
+  }
+
+  @ApiOkResponse({ type: InfinityPaginationResponse(OrganizerEventSummaryDto) })
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(RoleEnum.organizer, RoleEnum.admin)
   @SerializeOptions({ groups: [] })
   @Get('my')
   @HttpCode(HttpStatus.OK)
   findMine(
     @Query() query: QueryEventDto,
     @Request() req: { user: JwtPayloadType },
-  ): Promise<InfinityPaginationResponseDto<Event>> {
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 10;
-    return this.eventsService.findByOrganizer(String(req.user.id), page, limit);
+  ): Promise<InfinityPaginationResponseDto<OrganizerEventSummaryDto>> {
+    return this.analyticsService.getOrganizerEvents(String(req.user.id), query);
+  }
+
+  @ApiOkResponse({
+    type: InfinityPaginationResponse(OrganizerBookingSummaryDto),
+  })
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(RoleEnum.organizer, RoleEnum.admin)
+  @Get('my/bookings')
+  @HttpCode(HttpStatus.OK)
+  findMyBookings(
+    @Query() query: QueryOrganizerBookingsDto,
+    @Request() req: { user: JwtPayloadType },
+  ): Promise<InfinityPaginationResponseDto<OrganizerBookingSummaryDto>> {
+    const page = query?.page ?? 1;
+    const limit = Math.min(query?.limit ?? 20, 50);
+    return this.bookingsService.findByOrganizer(
+      String(req.user.id),
+      page,
+      limit,
+      {
+        eventId: query.eventId,
+        status: query.status,
+      },
+    );
+  }
+
+  @ApiOkResponse({
+    type: InfinityPaginationResponse(OrganizerTicketSummaryDto),
+  })
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(RoleEnum.organizer, RoleEnum.admin)
+  @Get('my/tickets')
+  @HttpCode(HttpStatus.OK)
+  findMyTickets(
+    @Query() query: QueryOrganizerTicketsDto,
+    @Request() req: { user: JwtPayloadType },
+  ): Promise<InfinityPaginationResponseDto<OrganizerTicketSummaryDto>> {
+    const page = query?.page ?? 1;
+    const limit = Math.min(query?.limit ?? 20, 50);
+    return this.ticketsService.findByOrganizer(
+      String(req.user.id),
+      page,
+      limit,
+      {
+        eventId: query.eventId,
+        status: query.status,
+        keyword: query.keyword,
+      },
+    );
+  }
+
+  @ApiOkResponse({ type: [Object] })
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(RoleEnum.staff)
+  @Get('staff/assignments')
+  @HttpCode(HttpStatus.OK)
+  getStaffAssignments(
+    @Request() req: { user: JwtPayloadType },
+  ): Promise<any[]> {
+    return this.staffService.listByStaff(String(req.user.id));
   }
 
   @ApiOkResponse({ type: Event })
@@ -142,6 +226,22 @@ export class EventsController {
       dto,
       isAdmin,
     );
+  }
+
+  @ApiCreatedResponse({ type: Event })
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(RoleEnum.organizer, RoleEnum.admin)
+  @SerializeOptions({ groups: [] })
+  @Post(':id/duplicate')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiParam({ name: 'id', type: String, required: true })
+  duplicate(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req: { user: JwtPayloadType },
+  ): Promise<Event> {
+    const isAdmin = req.user.role?.id === RoleEnum.admin;
+    return this.eventsService.duplicate(id, String(req.user.id), isAdmin);
   }
 
   @ApiBearerAuth()

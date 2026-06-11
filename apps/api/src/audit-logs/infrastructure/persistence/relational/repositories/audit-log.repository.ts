@@ -31,6 +31,7 @@ export class AuditLogRelationalRepository implements AuditLogRepository {
     const entities = await this.auditLogRepository.find({
       skip: (paginationOptions.page - 1) * paginationOptions.limit,
       take: paginationOptions.limit,
+      order: { createdAt: 'DESC' },
     });
 
     return entities.map((entity) => AuditLogMapper.toDomain(entity));

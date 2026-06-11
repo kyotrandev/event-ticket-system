@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { TicketTypeStatusEnum } from '../ticket-type-status.enum';
+import { Event } from '../../events/domain/event';
 
 export class TicketType {
   @ApiProperty({ type: String })
@@ -7,6 +8,9 @@ export class TicketType {
 
   @ApiProperty({ type: String })
   eventId: string;
+
+  @ApiProperty({ type: () => Event })
+  event?: Event;
 
   @ApiProperty({ type: String })
   name: string;

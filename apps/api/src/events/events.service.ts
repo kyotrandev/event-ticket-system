@@ -17,12 +17,15 @@ import { NullableType } from '../utils/types/nullable.type';
 import { InfinityPaginationResponseDto } from '../utils/dto/infinity-pagination-response.dto';
 import { infinityPagination } from '../utils/infinity-pagination';
 import { BookingsService } from '../bookings/bookings.service';
+import { TicketTypeRepository } from '../ticket-types/ticket-types.repository';
+import { TicketTypeStatusEnum } from '../ticket-types/ticket-type-status.enum';
 
 @Injectable()
 export class EventsService {
   constructor(
     private readonly eventRepository: EventRepository,
     private readonly bookingsService: BookingsService,
+    private readonly ticketTypeRepository: TicketTypeRepository,
   ) {}
 
   async create(organizerId: string, dto: CreateEventDto): Promise<Event> {
@@ -72,6 +75,7 @@ export class EventsService {
       dateFrom: query.dateFrom,
       dateTo: query.dateTo,
       location: query.location,
+      status: query.status,
       page,
       limit,
     });
@@ -248,5 +252,63 @@ export class EventsService {
     }
 
     await this.eventRepository.remove(id);
+  }
+
+  async duplicate(
+    id: string,
+    organizerId: string,
+    isAdmin: boolean,
+  ): Promise<Event> {
+    const event = await this.eventRepository.findById(id);
+    if (!event) {
+      throw new NotFoundException({
+        status: HttpStatus.NOT_FOUND,
+        error: 'notFound',
+      });
+    }
+
+    if (!isAdmin && String(event.organizerId) !== String(organizerId)) {
+      throw new ForbiddenException({
+        status: HttpStatus.FORBIDDEN,
+        message: 'Access denied: you do not own this event',
+      });
+    }
+
+    const ticketTypes = await this.ticketTypeRepository.findByEvent(id);
+
+    const copyName = event.name.endsWith(' (Copy)')
+      ? `${event.name} ${Date.now()}`
+      : `${event.name} (Copy)`;
+
+    const newEvent = await this.eventRepository.create({
+      organizerId: event.organizerId,
+      name: copyName,
+      description: event.description,
+      location: event.location,
+      category: event.category,
+      tags: event.tags,
+      startTime: event.startTime,
+      endTime: event.endTime,
+      bannerUrl: event.bannerUrl,
+      cancellationWindowHours: event.cancellationWindowHours,
+      maxTicketsPerOrder: event.maxTicketsPerOrder,
+      status: EventStatusEnum.DRAFT,
+    });
+
+    for (const tt of ticketTypes) {
+      await this.ticketTypeRepository.create({
+        eventId: newEvent.id,
+        name: tt.name,
+        price: tt.price,
+        totalQty: tt.totalQty,
+        soldQty: 0,
+        reservedQty: 0,
+        saleStart: tt.saleStart,
+        saleEnd: tt.saleEnd,
+        status: TicketTypeStatusEnum.AVAILABLE,
+      });
+    }
+
+    return newEvent;
   }
 }
