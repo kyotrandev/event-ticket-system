@@ -73,8 +73,8 @@ export default function MyTicketsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
-      <h1 className="mb-6 text-2xl font-bold">My Tickets</h1>
+    <div className="mx-auto max-w-4xl px-4 py-8">
+      <h1 className="mb-6 text-3xl font-extrabold tracking-tight">My Tickets</h1>
 
       {tickets.length === 0 ? (
         <div className="space-y-3 text-center py-12">

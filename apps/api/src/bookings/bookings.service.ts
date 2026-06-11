@@ -491,6 +491,7 @@ export class BookingsService {
       order: { createdAt: 'DESC' },
       skip: (page - 1) * limit,
       take: limit,
+      relations: ['items', 'items.ticketType', 'items.ticketType.event'],
     });
     return entities.map(BookingMapper.toDomain);
   }
@@ -510,7 +511,10 @@ export class BookingsService {
   async findByIdOrFail(id: string): Promise<Booking> {
     const entity = await this.dataSource
       .getRepository(BookingEntity)
-      .findOne({ where: { id } });
+      .findOne({
+        where: { id },
+        relations: ['items', 'items.ticketType', 'items.ticketType.event'],
+      });
     if (!entity) {
       throw new NotFoundException('Booking not found');
     }

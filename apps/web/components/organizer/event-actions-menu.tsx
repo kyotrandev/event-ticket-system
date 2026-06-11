@@ -17,7 +17,7 @@ import {
   Download,
 } from 'lucide-react';
 import type { OrganizerEventSummary } from '@/lib/types';
-import { Button } from '@/components/ui/button';
+import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 interface EventActionsMenuProps {
@@ -228,18 +228,19 @@ export function EventActionsMenu({
 
   return (
     <div className={cn('relative', open && 'z-50')} ref={rootRef}>
-      <Button
+      <button
         ref={triggerRef}
         type="button"
-        variant="outline"
-        size="sm"
-        className="rounded-xl font-bold shrink-0"
+        className={cn(
+          buttonVariants({ variant: 'outline', size: 'sm' }),
+          'rounded-xl font-bold shrink-0',
+        )}
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-haspopup="menu"
       >
         <MoreHorizontal className="size-4" />
-      </Button>
+      </button>
       {typeof document !== 'undefined' && menu
         ? createPortal(menu, document.body)
         : null}

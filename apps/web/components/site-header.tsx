@@ -64,12 +64,20 @@ export function SiteHeader() {
           {loading ? null : user ? (
             <>
               {!isRole(RoleId.Staff) && (
-                <Link
-                  href="/my-tickets"
-                  className={buttonVariants({ variant: 'ghost', size: 'lg', className: 'font-bold rounded-2xl text-base hidden sm:inline-flex' })}
-                >
-                  My tickets
-                </Link>
+                <>
+                  <Link
+                    href="/my-bookings"
+                    className={buttonVariants({ variant: 'ghost', size: 'lg', className: 'font-bold rounded-2xl text-base hidden md:inline-flex' })}
+                  >
+                    My bookings
+                  </Link>
+                  <Link
+                    href="/my-tickets"
+                    className={buttonVariants({ variant: 'ghost', size: 'lg', className: 'font-bold rounded-2xl text-base hidden sm:inline-flex' })}
+                  >
+                    My tickets
+                  </Link>
+                </>
               )}
               <span className="text-muted-foreground hidden text-sm font-medium sm:inline px-2">
                 {user.firstName ?? user.email}
