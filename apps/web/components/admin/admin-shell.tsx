@@ -7,6 +7,7 @@ import {
   CalendarDays,
   LayoutDashboard,
   Receipt,
+  ScrollText,
   Shield,
   Tag,
   Ticket,
@@ -104,12 +105,18 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       icon: Ticket,
       isActive: (p) => p.startsWith('/admin/tickets'),
     },
+    {
+      href: '/admin/audit-logs',
+      label: 'Audit Logs',
+      icon: ScrollText,
+      isActive: (p) => p.startsWith('/admin/audit-logs'),
+    },
   ];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-muted/30 to-background">
       <div className="mx-auto max-w-[1440px] flex min-h-screen">
-        <aside className="hidden lg:flex w-64 shrink-0 flex-col border-r bg-background/80 backdrop-blur-sm sticky top-0 h-screen">
+        <aside className="hidden lg:flex w-64 shrink-0 flex-col border-r bg-background/80 backdrop-blur-sm sticky top-0 h-screen max-h-screen">
           <div className="p-5 border-b">
             <div className="flex items-center gap-3">
               <div className="bg-primary/10 p-2.5 rounded-xl">

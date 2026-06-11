@@ -136,7 +136,11 @@ export default function AdminEventHubPage({
         </Card>
       </div>
 
-      <CheckinLivePanel eventId={id} />
+      <CheckinLivePanel
+        eventId={id}
+        checkInRate={event.checkInRate}
+        ticketsSold={event.ticketsSold}
+      />
 
       {analytics && analytics.topPromoCodes.length > 0 && (
         <Card className="border-2 rounded-2xl">

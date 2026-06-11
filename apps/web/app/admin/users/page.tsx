@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { toast } from 'sonner';
 import { adminApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -147,7 +148,9 @@ export default function AdminUsersPage() {
               return (
                 <tr key={u.id} className="hover:bg-muted/30">
                   <td className="px-4 py-3 font-medium">
-                    {u.firstName ?? ''} {u.lastName ?? ''}
+                    <Link href={`/admin/users/${u.id}`} className="hover:text-primary hover:underline">
+                      {u.firstName ?? ''} {u.lastName ?? ''}
+                    </Link>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{u.email ?? '—'}</td>
                   <td className="px-4 py-3">{ROLE_LABELS[roleId] ?? roleId}</td>
@@ -160,7 +163,14 @@ export default function AdminUsersPage() {
                     {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '—'}
                   </td>
                   <td className="px-4 py-3">
-                    {!isAdmin && (
+                    <div className="flex gap-2">
+                      <Link
+                        href={`/admin/users/${u.id}`}
+                        className="inline-flex items-center justify-center rounded-xl text-sm font-medium border border-input bg-background shadow-sm hover:bg-accent h-8 px-3"
+                      >
+                        View
+                      </Link>
+                      {!isAdmin && (
                       <Button
                         variant={isLocked ? 'outline' : 'destructive'}
                         size="sm"
@@ -170,7 +180,8 @@ export default function AdminUsersPage() {
                       >
                         {actioning === u.id ? '…' : isLocked ? 'Unlock' : 'Lock'}
                       </Button>
-                    )}
+                      )}
+                    </div>
                   </td>
                 </tr>
               );
