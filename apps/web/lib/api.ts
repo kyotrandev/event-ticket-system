@@ -359,17 +359,33 @@ export const adminApi = {
 
 // --- Organizer endpoints ---
 export const organizerApi = {
-  getEvents: (page = 1, limit = 20) =>
-    api.get<{ data: import('./types').EventModel[]; hasNextPage: boolean }>(
-      '/events/my',
-      {
-        page,
-        limit,
-      },
-    ),
+  getStats: () => api.get<import('./types').OrganizerStats>('/events/my/stats'),
+
+  getEvents: (query?: import('./types').EventQuery) =>
+    api.get<{
+      data: import('./types').OrganizerEventSummary[];
+      hasNextPage: boolean;
+    }>('/events/my', {
+      page: query?.page ?? 1,
+      limit: query?.limit ?? 12,
+      keyword: query?.keyword || undefined,
+      category: query?.category || undefined,
+      dateFrom: query?.dateFrom || undefined,
+      dateTo: query?.dateTo || undefined,
+      status: query?.status || undefined,
+      sort: query?.sort || undefined,
+    }),
 
   getAnalytics: (eventId: string) =>
     api.get<EventAnalytics>(`/events/${eventId}/analytics`),
+
+  duplicateEvent: (eventId: string) =>
+    api.post<import('./types').EventModel>(`/events/${eventId}/duplicate`),
+
+  getAttendees: (eventId: string) =>
+    api.get<import('./types').EventAttendee[]>(
+      `/tickets/events/${eventId}/attendees`,
+    ),
 
   createEvent: (data: Partial<import('./types').EventModel>) =>
     api.post<import('./types').EventModel>('/events', data),

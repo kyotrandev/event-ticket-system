@@ -190,7 +190,7 @@ export default function StaffEventDetailsPage() {
                 onChange={e => setSearch(e.target.value)}
               />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v ?? '')}>
               <SelectTrigger className="w-full sm:w-40 rounded-xl bg-muted/50 border-0">
                 <SelectValue placeholder="All Status" />
               </SelectTrigger>

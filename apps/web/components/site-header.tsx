@@ -41,7 +41,7 @@ export function SiteHeader() {
               href="/organizer/events"
               className={buttonVariants({ variant: 'ghost', size: 'lg', className: 'font-bold rounded-2xl text-base hidden md:inline-flex' })}
             >
-              My events
+              My Events
             </Link>
           )}
           {isRole(RoleId.Admin) && (

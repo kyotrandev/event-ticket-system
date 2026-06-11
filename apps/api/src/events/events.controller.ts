@@ -44,6 +44,8 @@ import { InviteStaffDto } from '../event-staff-assignments/dto/invite-staff.dto'
 import { UpdateStaffDto } from '../event-staff-assignments/dto/update-staff.dto';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { EventAnalyticsDto } from '../analytics/dto/event-analytics.dto';
+import { OrganizerStatsDto } from '../analytics/dto/organizer-stats.dto';
+import { OrganizerEventSummaryDto } from './dto/organizer-event-summary.dto';
 
 @ApiTags('Events')
 @Controller({
@@ -81,19 +83,33 @@ export class EventsController {
     return this.eventsService.findPublished(query);
   }
 
-  @ApiOkResponse({ type: InfinityPaginationResponse(Event) })
+  @ApiOkResponse({ type: OrganizerStatsDto })
   @ApiBearerAuth()
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(RoleEnum.organizer, RoleEnum.admin)
+  @Get('my/stats')
+  @HttpCode(HttpStatus.OK)
+  getMyStats(
+    @Request() req: { user: JwtPayloadType },
+  ): Promise<OrganizerStatsDto> {
+    return this.analyticsService.getOrganizerStats(String(req.user.id));
+  }
+
+  @ApiOkResponse({ type: InfinityPaginationResponse(OrganizerEventSummaryDto) })
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(RoleEnum.organizer, RoleEnum.admin)
   @SerializeOptions({ groups: [] })
   @Get('my')
   @HttpCode(HttpStatus.OK)
   findMine(
     @Query() query: QueryEventDto,
     @Request() req: { user: JwtPayloadType },
-  ): Promise<InfinityPaginationResponseDto<Event>> {
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 10;
-    return this.eventsService.findByOrganizer(String(req.user.id), page, limit);
+  ): Promise<InfinityPaginationResponseDto<OrganizerEventSummaryDto>> {
+    return this.analyticsService.getOrganizerEvents(
+      String(req.user.id),
+      query,
+    );
   }
 
   @ApiOkResponse({ type: [Object] })
@@ -154,6 +170,22 @@ export class EventsController {
       dto,
       isAdmin,
     );
+  }
+
+  @ApiCreatedResponse({ type: Event })
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(RoleEnum.organizer, RoleEnum.admin)
+  @SerializeOptions({ groups: [] })
+  @Post(':id/duplicate')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiParam({ name: 'id', type: String, required: true })
+  duplicate(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req: { user: JwtPayloadType },
+  ): Promise<Event> {
+    const isAdmin = req.user.role?.id === RoleEnum.admin;
+    return this.eventsService.duplicate(id, String(req.user.id), isAdmin);
   }
 
   @ApiBearerAuth()
