@@ -83,7 +83,10 @@ export class BookingsController {
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiParam({ name: 'id', type: String, required: true })
-  @ApiNoContentResponse({ description: 'Booking cancelled and refund issued' })
+  @ApiNoContentResponse({
+    description:
+      'Pending booking released or paid booking cancelled with refund',
+  })
   cancel(
     @Param('id', ParseUUIDPipe) id: string,
     @Request() req: { user: JwtPayloadType },

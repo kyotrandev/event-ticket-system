@@ -241,18 +241,31 @@ export class BookingsService {
   }
 
   /**
-   * Cancels a PAID booking, releases inventory, and issues a Stripe refund.
-   * Idempotent: REFUNDED bookings no-op. Only the booking owner may cancel.
+   * Cancels a booking owned by the customer.
+   * - PENDING_PAYMENT: releases reserved inventory (same as expiry), no refund.
+   * - PAID: Stripe refund + ticket cancellation.
+   * Idempotent: REFUNDED / EXPIRED no-op for repeat calls.
    */
   async cancel(bookingId: string, userId: string): Promise<void> {
     const booking = await this.findByIdOrFail(bookingId);
     if (booking.customerId !== userId) {
       throw new ForbiddenException('Not your booking');
     }
-    if (booking.status === BookingStatusEnum.REFUNDED) return; // already cancelled
+    if (
+      booking.status === BookingStatusEnum.REFUNDED ||
+      booking.status === BookingStatusEnum.EXPIRED
+    ) {
+      return;
+    }
+
+    if (booking.status === BookingStatusEnum.PENDING_PAYMENT) {
+      await this.cancelPendingPayment(bookingId, userId, booking);
+      return;
+    }
+
     if (booking.status !== BookingStatusEnum.PAID) {
       throw new UnprocessableEntityException(
-        `Only PAID bookings can be cancelled (current: ${booking.status})`,
+        `Only PENDING_PAYMENT or PAID bookings can be cancelled (current: ${booking.status})`,
       );
     }
 
@@ -427,11 +440,47 @@ export class BookingsService {
     }
   }
 
+  /** Customer-initiated cancel while payment is still pending. */
+  private async cancelPendingPayment(
+    bookingId: string,
+    userId: string,
+    booking: Booking,
+  ): Promise<void> {
+    await this.removeExpiryJob(bookingId);
+    const expired = await this.expire(bookingId);
+    if (!expired) return;
+
+    const items = booking.items ?? [];
+    await this.auditLogsService.log({
+      userId,
+      action: 'booking.cancelled',
+      entity: 'Booking',
+      entityId: bookingId,
+      payload: { reason: 'user_cancelled_pending', totalAmount: booking.totalAmount },
+    });
+    await Promise.allSettled(
+      items.map((item) =>
+        this.waitlistService.notifyNext(item.ticketTypeId, item.quantity),
+      ),
+    );
+  }
+
+  private async removeExpiryJob(bookingId: string): Promise<void> {
+    try {
+      const job = await this.expiryQueue.getJob(`expire-${bookingId}`);
+      if (job) await job.remove();
+    } catch (err) {
+      this.logger.warn(
+        `failed to remove expiry job for booking ${bookingId}: ${String(err)}`,
+      );
+    }
+  }
+
   /**
    * Expires a booking and releases held inventory (SPEC US-3.4).
    * Idempotent: only PENDING_PAYMENT bookings transition; re-runs no-op.
    */
-  async expire(bookingId: string): Promise<void> {
+  async expire(bookingId: string): Promise<boolean> {
     const expired = await this.dataSource.transaction(async (manager) => {
       const booking = await manager
         .createQueryBuilder(BookingEntity, 'b')
@@ -479,6 +528,7 @@ export class BookingsService {
         entityId: bookingId,
       });
     }
+    return expired;
   }
 
   async findMine(

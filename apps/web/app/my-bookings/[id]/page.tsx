@@ -80,14 +80,22 @@ export default function BookingDetailPage({
 
   async function handleCancel() {
     if (!booking) return;
+    const wasPending = booking.status === 'pending_payment';
     setCancelling(true);
     try {
       await bookingApi.cancel(booking.id);
-      setBooking({ ...booking, status: 'refunded' });
-      setTickets((prev) =>
-        prev.map((t) => ({ ...t, status: 'cancelled' as const })),
-      );
-      toast.success('Booking cancelled. Refund has been initiated.');
+      setBooking({
+        ...booking,
+        status: wasPending ? 'expired' : 'refunded',
+      });
+      if (!wasPending) {
+        setTickets((prev) =>
+          prev.map((t) => ({ ...t, status: 'cancelled' as const })),
+        );
+        toast.success('Booking cancelled. Refund has been initiated.');
+      } else {
+        toast.success('Booking cancelled. Reserved seats have been released.');
+      }
       setShowCancelDialog(false);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Cancellation failed');
