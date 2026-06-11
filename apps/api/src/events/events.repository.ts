@@ -9,6 +9,7 @@ export interface FindPublishedOptions {
   dateFrom?: string;
   dateTo?: string;
   location?: string;
+  status?: string;
   page: number;
   limit: number;
 }

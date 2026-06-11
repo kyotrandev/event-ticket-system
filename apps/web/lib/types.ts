@@ -83,6 +83,7 @@ export interface TicketType {
   saleStart: string;
   saleEnd: string;
   status: TicketTypeStatus;
+  event?: EventModel;
   createdAt: string;
   updatedAt: string;
 }
@@ -101,6 +102,7 @@ export interface EventQuery {
   dateFrom?: string;
   dateTo?: string;
   location?: string;
+  status?: EventStatus | '';
 }
 
 export interface BookingItem {
@@ -150,6 +152,7 @@ export interface Ticket {
   customerId: string;
   code: string;
   status: TicketStatus;
+  bookingItem?: BookingItem;
   createdAt: string;
   updatedAt: string;
 }

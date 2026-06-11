@@ -96,15 +96,42 @@ export default function MyTicketsPage() {
                     </Badge>
                   </div>
                 </CardHeader>
-                <CardContent className="flex items-start gap-4 flex-col sm:flex-row">
-                  <div className="shrink-0 bg-white p-2 rounded-lg shadow-sm border">
+                <CardContent className="flex flex-col sm:flex-row items-start gap-6 pt-4">
+                  <div className="shrink-0 bg-white p-2 rounded-xl shadow-sm border">
                     <QrImage code={t.code} />
                   </div>
-                  <div className="flex-1 text-sm space-y-2 text-muted-foreground w-full">
-                    <div className="grid grid-cols-2 gap-y-2">
+                  <div className="flex-1 w-full space-y-4">
+                    <div>
+                      <h3 className="font-semibold text-lg leading-tight">
+                        {t.bookingItem?.ticketType?.event?.name || 'Unknown Event'}
+                      </h3>
+                      <p className="text-muted-foreground text-sm mt-1">
+                        {t.bookingItem?.ticketType?.event?.location || 'Unknown Location'}
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 text-sm bg-muted/30 p-3 rounded-lg">
                       <div>
-                        <p className="font-medium text-foreground">Issued Date</p>
-                        <p>{new Date(t.createdAt).toLocaleDateString('vi-VN')}</p>
+                        <p className="text-muted-foreground mb-1 text-xs uppercase tracking-wider font-semibold">Event Date</p>
+                        <p className="font-medium">
+                          {t.bookingItem?.ticketType?.event?.startTime
+                            ? new Date(t.bookingItem.ticketType.event.startTime).toLocaleDateString('vi-VN', {
+                                day: '2-digit',
+                                month: 'short',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })
+                            : 'TBA'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground mb-1 text-xs uppercase tracking-wider font-semibold">Ticket Type</p>
+                        <p className="font-medium">{t.bookingItem?.ticketType?.name || 'Standard'}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground mb-1 text-xs uppercase tracking-wider font-semibold">Issued Date</p>
+                        <p className="font-medium">{new Date(t.createdAt).toLocaleDateString('vi-VN')}</p>
                       </div>
                     </div>
                   </div>

@@ -11,6 +11,30 @@ export function formatDateTime(iso: string): string {
   });
 }
 
+export function getEventStatusTag(event: EventModel) {
+  if (event.status === 'cancelled') {
+    return { label: 'Cancelled', className: 'bg-danger text-danger-foreground hover:bg-danger/90' };
+  }
+  
+  const now = new Date();
+  const start = new Date(event.startTime);
+  const end = new Date(event.endTime);
+
+  if (event.status === 'ongoing' || (start <= now && end >= now && event.status !== 'ended')) {
+    return { label: 'Live now', className: 'bg-success text-success-foreground hover:bg-success/90 animate-pulse' };
+  }
+  
+  if (end < now || event.status === 'ended') {
+    return { label: 'Ended', className: 'bg-muted text-muted-foreground hover:bg-muted/90 border-2 border-border' };
+  }
+
+  if (start > now && (event.status === 'published' || event.status === 'draft')) {
+    return { label: 'Upcoming', className: 'bg-primary text-primary-foreground hover:bg-primary/90' };
+  }
+
+  return { label: event.status, className: 'bg-secondary text-secondary-foreground hover:bg-secondary/90 capitalize' };
+}
+
 export function EventCard({ event }: { event: EventModel }) {
   let displayLocation = event.location;
   try {
@@ -40,9 +64,12 @@ export function EventCard({ event }: { event: EventModel }) {
           )}
         </div>
         <CardHeader>
-          <div className="mb-2 flex items-center gap-2">
+          <div className="mb-2 flex items-center gap-2 flex-wrap">
             <Badge variant="secondary" className="rounded-full font-bold px-3">{event.category}</Badge>
-            {event.status === 'ongoing' && <Badge className="rounded-full font-bold px-3 bg-success text-success-foreground hover:bg-success/90">Live now</Badge>}
+            {(() => {
+              const tag = getEventStatusTag(event);
+              return <Badge className={`rounded-full font-bold px-3 ${tag.className}`}>{tag.label}</Badge>;
+            })()}
           </div>
           <CardTitle className="line-clamp-2 mt-1">{event.name}</CardTitle>
         </CardHeader>

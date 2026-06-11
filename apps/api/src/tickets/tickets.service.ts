@@ -81,6 +81,7 @@ export class TicketsService {
     const entities = await this.dataSource.getRepository(TicketEntity).find({
       where: { customerId },
       order: { createdAt: 'DESC' },
+      relations: ['bookingItem', 'bookingItem.ticketType', 'bookingItem.ticketType.event'],
     });
     return entities.map(TicketMapper.toDomain);
   }

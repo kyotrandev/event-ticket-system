@@ -43,42 +43,28 @@ export class EventsRelationalRepository implements EventRepository {
       status: undefined,
     };
 
-    // Published or Ongoing
-    const publishedWhere: FindOptionsWhere<EventEntity> = {
-      ...baseWhere,
-    };
-    const ongoingWhere: FindOptionsWhere<EventEntity> = {
-      ...baseWhere,
-    };
+    const statuses = options.status 
+      ? [options.status as EventStatusEnum] 
+      : [EventStatusEnum.PUBLISHED, EventStatusEnum.ONGOING];
 
-    if (options.category) {
-      publishedWhere.category = ILike(`%${options.category}%`) as any;
-      ongoingWhere.category = ILike(`%${options.category}%`) as any;
-    }
-
-    if (options.location) {
-      publishedWhere.location = ILike(`%${options.location}%`) as any;
-      ongoingWhere.location = ILike(`%${options.location}%`) as any;
-    }
-
-    if (options.dateFrom) {
-      publishedWhere.startTime = MoreThanOrEqual(
-        new Date(options.dateFrom),
-      ) as any;
-      ongoingWhere.startTime = MoreThanOrEqual(
-        new Date(options.dateFrom),
-      ) as any;
-    }
-
-    if (options.dateTo) {
-      publishedWhere.endTime = LessThanOrEqual(new Date(options.dateTo)) as any;
-      ongoingWhere.endTime = LessThanOrEqual(new Date(options.dateTo)) as any;
-    }
-
-    publishedWhere.status = EventStatusEnum.PUBLISHED;
-    ongoingWhere.status = EventStatusEnum.ONGOING;
-
-    where.push(publishedWhere, ongoingWhere);
+    statuses.forEach((status) => {
+      const statusWhere: FindOptionsWhere<EventEntity> = { ...baseWhere, status };
+      
+      if (options.category) {
+        statusWhere.category = ILike(`%${options.category}%`) as any;
+      }
+      if (options.location) {
+        statusWhere.location = ILike(`%${options.location}%`) as any;
+      }
+      if (options.dateFrom) {
+        statusWhere.startTime = MoreThanOrEqual(new Date(options.dateFrom)) as any;
+      }
+      if (options.dateTo) {
+        statusWhere.endTime = LessThanOrEqual(new Date(options.dateTo)) as any;
+      }
+      
+      where.push(statusWhere);
+    });
 
     let entities: EventEntity[];
 
@@ -87,7 +73,7 @@ export class EventsRelationalRepository implements EventRepository {
       const qb = this.eventsRepository
         .createQueryBuilder('event')
         .where('event.status IN (:...statuses)', {
-          statuses: [EventStatusEnum.PUBLISHED, EventStatusEnum.ONGOING],
+          statuses,
         })
         .andWhere('(event.name ILIKE :kw OR event.description ILIKE :kw)', {
           kw: `%${keyword}%`,
