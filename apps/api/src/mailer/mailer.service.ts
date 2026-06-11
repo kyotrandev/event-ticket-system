@@ -1,53 +1,65 @@
 import { Injectable } from '@nestjs/common';
 import fs from 'node:fs/promises';
 import { ConfigService } from '@nestjs/config';
-import nodemailer from 'nodemailer';
 import Handlebars from 'handlebars';
 import { AllConfigType } from '../config/config.type';
 
+interface SendMailOptions {
+  from?: string;
+  to: string | string[];
+  subject: string;
+  html?: string;
+  templatePath?: string;
+  context?: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
 @Injectable()
 export class MailerService {
-  private readonly transporter: nodemailer.Transporter;
+  private readonly apiKey: string;
+  private readonly defaultFrom: string;
+
   constructor(private readonly configService: ConfigService<AllConfigType>) {
-    this.transporter = nodemailer.createTransport({
-      host: configService.get('mail.host', { infer: true }),
-      port: configService.get('mail.port', { infer: true }),
-      ignoreTLS: configService.get('mail.ignoreTLS', { infer: true }),
-      secure: configService.get('mail.secure', { infer: true }),
-      requireTLS: configService.get('mail.requireTLS', { infer: true }),
-      auth: {
-        user: configService.get('mail.user', { infer: true }),
-        pass: configService.get('mail.password', { infer: true }),
-      },
-    });
+    // MAIL_PASSWORD holds the Resend API key (re_xxx)
+    this.apiKey = configService.get('mail.password', { infer: true }) ?? '';
+    const name =
+      configService.get('mail.defaultName', { infer: true }) ?? 'App';
+    const email = configService.get('mail.defaultEmail', { infer: true }) ?? '';
+    this.defaultFrom = `"${name}" <${email}>`;
   }
 
   async sendMail({
     templatePath,
     context,
     ...mailOptions
-  }: nodemailer.SendMailOptions & {
-    templatePath: string;
-    context: Record<string, unknown>;
-  }): Promise<void> {
-    let html: string | undefined;
-    if (templatePath) {
-      const template = await fs.readFile(templatePath, 'utf-8');
-      html = Handlebars.compile(template, {
-        strict: true,
-      })(context);
+  }: SendMailOptions): Promise<void> {
+    let html = mailOptions.html as string | undefined;
+    if (!html && templatePath) {
+      const template = await fs.readFile(templatePath as string, 'utf-8');
+      html = Handlebars.compile(template, { strict: true })(context ?? {});
     }
 
-    await this.transporter.sendMail({
-      ...mailOptions,
-      from: mailOptions.from
-        ? mailOptions.from
-        : `"${this.configService.get('mail.defaultName', {
-            infer: true,
-          })}" <${this.configService.get('mail.defaultEmail', {
-            infer: true,
-          })}>`,
-      html: mailOptions.html ? mailOptions.html : html,
+    const to = Array.isArray(mailOptions.to)
+      ? (mailOptions.to as string[])
+      : [mailOptions.to as string];
+
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: mailOptions.from ?? this.defaultFrom,
+        to,
+        subject: mailOptions.subject as string,
+        html,
+      }),
     });
+
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`Resend API error ${res.status}: ${body}`);
+    }
   }
 }
