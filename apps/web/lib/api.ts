@@ -404,6 +404,28 @@ export const adminApi = {
 
   getUser: (id: number | string) =>
     api.get<import('./types').User>(`/users/${id}`),
+
+  getEvents: (query?: import('./types').EventQuery & { organizerId?: string }) =>
+    api.get<{ data: import('./types').AdminEventSummary[]; hasNextPage: boolean }>(
+      '/admin/events',
+      {
+        page: query?.page ?? 1,
+        limit: query?.limit ?? 12,
+        keyword: query?.keyword || undefined,
+        category: query?.category || undefined,
+        dateFrom: query?.dateFrom || undefined,
+        dateTo: query?.dateTo || undefined,
+        status: query?.status || undefined,
+        sort: query?.sort || undefined,
+        organizerId: query?.organizerId || undefined,
+      },
+    ),
+
+  getAuditLogs: (page = 1, limit = 30) =>
+    api.get<{ data: import('./types').AuditLogEntry[]; hasNextPage: boolean }>(
+      '/admin/audit-logs',
+      { page, limit },
+    ),
 };
 
 // --- Organizer endpoints ---
