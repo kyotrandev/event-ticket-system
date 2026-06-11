@@ -44,5 +44,8 @@ apps/api/src/database/migrations/*.js
 apps/web/.next/
 apps/web/out/
 
+# CodeGraph (local index)
+.codegraph/
+
 # Misc
 *.tsbuildinfo

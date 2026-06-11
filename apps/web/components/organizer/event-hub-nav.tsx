@@ -6,8 +6,10 @@ import {
   BarChart3,
   LayoutDashboard,
   Pencil,
+  Receipt,
   ScanLine,
   Ticket,
+  TicketCheck,
   UserCog,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -20,6 +22,8 @@ export function EventHubNav({ eventId }: { eventId: string }) {
   const tabs = [
     { href: base, label: 'Overview', icon: LayoutDashboard, exact: true },
     { href: `${base}/ticket-types`, label: 'Ticket types', icon: Ticket },
+    { href: `${base}/bookings`, label: 'Bookings', icon: Receipt },
+    { href: `${base}/tickets`, label: 'Tickets', icon: TicketCheck },
     { href: `${base}/staff`, label: 'Staff', icon: UserCog },
     { href: `${base}/analytics`, label: 'Analytics', icon: BarChart3 },
     { href: `${base}/checkin`, label: 'Check-in', icon: ScanLine },

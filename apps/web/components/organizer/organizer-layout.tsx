@@ -3,15 +3,40 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, CalendarDays, Plus } from 'lucide-react';
+import { LayoutDashboard, CalendarDays, Plus, Receipt, Ticket } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { RoleId } from '@/lib/types';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 const NAV = [
-  { href: '/organizer/events', label: 'My Events', icon: CalendarDays },
-  { href: '/organizer/events/create', label: 'Create Event', icon: Plus },
+  {
+    href: '/organizer/events',
+    label: 'My Events',
+    icon: CalendarDays,
+    isActive: (p: string) =>
+      p === '/organizer/events' ||
+      (p.startsWith('/organizer/events/') &&
+        !p.startsWith('/organizer/events/create')),
+  },
+  {
+    href: '/organizer/bookings',
+    label: 'Bookings',
+    icon: Receipt,
+    isActive: (p: string) => p.startsWith('/organizer/bookings'),
+  },
+  {
+    href: '/organizer/tickets',
+    label: 'Tickets',
+    icon: Ticket,
+    isActive: (p: string) => p.startsWith('/organizer/tickets'),
+  },
+  {
+    href: '/organizer/events/create',
+    label: 'Create Event',
+    icon: Plus,
+    isActive: (p: string) => p.startsWith('/organizer/events/create'),
+  },
 ];
 
 export function OrganizerLayout({ children }: { children: React.ReactNode }) {
@@ -44,8 +69,6 @@ export function OrganizerLayout({ children }: { children: React.ReactNode }) {
     return null;
   }
 
-  const isEventsList = pathname === '/organizer/events';
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-muted/40 to-background">
       <div className="border-b-2 border-border bg-background/80 backdrop-blur-sm sticky top-20 z-40">
@@ -65,10 +88,7 @@ export function OrganizerLayout({ children }: { children: React.ReactNode }) {
           </div>
           <nav className="flex flex-wrap gap-2">
             {NAV.map((item) => {
-              const active =
-                item.href === '/organizer/events'
-                  ? isEventsList
-                  : pathname.startsWith(item.href);
+              const active = item.isActive(pathname);
               const Icon = item.icon;
               return (
                 <Link

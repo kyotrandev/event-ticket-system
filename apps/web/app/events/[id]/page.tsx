@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { api, ApiError, bookingApi, waitlistApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import type { EventModel, TicketType } from '@/lib/types';
+import { RoleId } from '@/lib/types';
 import { formatDateTime } from '@/components/event-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -53,7 +54,8 @@ export default function EventDetailPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, isRole } = useAuth();
+  const canPurchase = !user || isRole(RoleId.Customer);
 
   const [event, setEvent] = useState<EventModel | null>(null);
   const [tickets, setTickets] = useState<TicketType[]>([]);
@@ -241,7 +243,7 @@ export default function EventDetailPage({
                     <div className="text-lg font-semibold">{formatVnd(t.price)}</div>
                   </div>
                 </CardHeader>
-                {purchasable && (
+                {purchasable && canPurchase && (
                   <CardContent>
                     <div className="flex items-center gap-3">
                       <Label htmlFor={`qty-${t.id}`} className="shrink-0">
@@ -305,7 +307,7 @@ export default function EventDetailPage({
                     </div>
                   </CardContent>
                 )}
-                {soldOut && eventActive && (
+                {soldOut && eventActive && canPurchase && (
                   <CardContent>
                     <Button
                       variant="outline"
@@ -321,7 +323,21 @@ export default function EventDetailPage({
           })}
 
           {/* Booking form footer */}
-          {eventActive && tickets.some((t) => t.status === 'available') && (
+          {!canPurchase && user && (
+            <div className="mt-6 rounded-2xl border-2 border-dashed border-border bg-muted/30 p-4 text-sm text-muted-foreground">
+              Organizer accounts manage sales from{' '}
+              <a href="/organizer/bookings" className="font-bold text-primary underline">
+                Bookings
+              </a>{' '}
+              and{' '}
+              <a href="/organizer/tickets" className="font-bold text-primary underline">
+                Tickets
+              </a>
+              .
+            </div>
+          )}
+
+          {canPurchase && eventActive && tickets.some((t) => t.status === 'available') && (
             <div className="mt-6 space-y-4 rounded-lg border p-4">
               <div className="flex items-center gap-3">
                 <Label htmlFor="promo" className="shrink-0">

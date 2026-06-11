@@ -46,6 +46,12 @@ import { AnalyticsService } from '../analytics/analytics.service';
 import { EventAnalyticsDto } from '../analytics/dto/event-analytics.dto';
 import { OrganizerStatsDto } from '../analytics/dto/organizer-stats.dto';
 import { OrganizerEventSummaryDto } from './dto/organizer-event-summary.dto';
+import { BookingsService } from '../bookings/bookings.service';
+import { TicketsService } from '../tickets/tickets.service';
+import { QueryOrganizerBookingsDto } from '../bookings/dto/query-organizer-bookings.dto';
+import { OrganizerBookingSummaryDto } from '../bookings/dto/organizer-booking-summary.dto';
+import { QueryOrganizerTicketsDto } from '../tickets/dto/query-organizer-tickets.dto';
+import { OrganizerTicketSummaryDto } from '../tickets/dto/organizer-ticket-summary.dto';
 
 @ApiTags('Events')
 @Controller({
@@ -57,6 +63,8 @@ export class EventsController {
     private readonly eventsService: EventsService,
     private readonly staffService: EventStaffAssignmentsService,
     private readonly analyticsService: AnalyticsService,
+    private readonly bookingsService: BookingsService,
+    private readonly ticketsService: TicketsService,
   ) {}
 
   @ApiCreatedResponse({ type: Event })
@@ -110,6 +118,43 @@ export class EventsController {
       String(req.user.id),
       query,
     );
+  }
+
+  @ApiOkResponse({ type: InfinityPaginationResponse(OrganizerBookingSummaryDto) })
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(RoleEnum.organizer, RoleEnum.admin)
+  @Get('my/bookings')
+  @HttpCode(HttpStatus.OK)
+  findMyBookings(
+    @Query() query: QueryOrganizerBookingsDto,
+    @Request() req: { user: JwtPayloadType },
+  ): Promise<InfinityPaginationResponseDto<OrganizerBookingSummaryDto>> {
+    const page = query?.page ?? 1;
+    const limit = Math.min(query?.limit ?? 20, 50);
+    return this.bookingsService.findByOrganizer(String(req.user.id), page, limit, {
+      eventId: query.eventId,
+      status: query.status,
+    });
+  }
+
+  @ApiOkResponse({ type: InfinityPaginationResponse(OrganizerTicketSummaryDto) })
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(RoleEnum.organizer, RoleEnum.admin)
+  @Get('my/tickets')
+  @HttpCode(HttpStatus.OK)
+  findMyTickets(
+    @Query() query: QueryOrganizerTicketsDto,
+    @Request() req: { user: JwtPayloadType },
+  ): Promise<InfinityPaginationResponseDto<OrganizerTicketSummaryDto>> {
+    const page = query?.page ?? 1;
+    const limit = Math.min(query?.limit ?? 20, 50);
+    return this.ticketsService.findByOrganizer(String(req.user.id), page, limit, {
+      eventId: query.eventId,
+      status: query.status,
+      keyword: query.keyword,
+    });
   }
 
   @ApiOkResponse({ type: [Object] })

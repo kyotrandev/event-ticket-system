@@ -238,6 +238,10 @@ export const paymentApi = {
 
 export const ticketApi = {
   findMine: () => api.get<Ticket[]>('/tickets/me'),
+  findByBooking: (bookingId: string) =>
+    api.get<Ticket[]>(`/tickets/booking/${bookingId}`),
+  getDetails: (id: string) =>
+    api.get<import('./types').TicketDetails>(`/tickets/${id}/details`),
   getQrBlob: async (code: string): Promise<string> => {
     const token = tokenStore.get();
     const res = await fetch(
@@ -386,6 +390,40 @@ export const organizerApi = {
     api.get<import('./types').EventAttendee[]>(
       `/tickets/events/${eventId}/attendees`,
     ),
+
+  getBookings: (query?: {
+    page?: number;
+    limit?: number;
+    eventId?: string;
+    status?: string;
+  }) =>
+    api.get<{
+      data: import('./types').OrganizerBookingSummary[];
+      hasNextPage: boolean;
+    }>('/events/my/bookings', {
+      page: query?.page ?? 1,
+      limit: query?.limit ?? 20,
+      eventId: query?.eventId || undefined,
+      status: query?.status || undefined,
+    }),
+
+  getTickets: (query?: {
+    page?: number;
+    limit?: number;
+    eventId?: string;
+    status?: string;
+    keyword?: string;
+  }) =>
+    api.get<{
+      data: import('./types').OrganizerTicketSummary[];
+      hasNextPage: boolean;
+    }>('/events/my/tickets', {
+      page: query?.page ?? 1,
+      limit: query?.limit ?? 20,
+      eventId: query?.eventId || undefined,
+      status: query?.status || undefined,
+      keyword: query?.keyword || undefined,
+    }),
 
   createEvent: (data: Partial<import('./types').EventModel>) =>
     api.post<import('./types').EventModel>('/events', data),

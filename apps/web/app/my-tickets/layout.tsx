@@ -22,6 +22,10 @@ export default function MyTicketsLayout({
     }
     if (user.role?.id === RoleId.Staff) {
       router.replace('/staff/dashboard');
+      return;
+    }
+    if (user.role?.id === RoleId.Organizer) {
+      router.replace('/organizer/tickets');
     }
   }, [loading, user, router]);
 
@@ -36,7 +40,9 @@ export default function MyTicketsLayout({
     );
   }
 
-  if (user.role?.id === RoleId.Staff) return null;
+  if (user.role?.id === RoleId.Staff || user.role?.id === RoleId.Organizer) {
+    return null;
+  }
 
   return <AccountShell>{children}</AccountShell>;
 }

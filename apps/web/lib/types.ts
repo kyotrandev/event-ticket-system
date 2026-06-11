@@ -124,6 +124,32 @@ export interface OrganizerEventSummary extends EventModel {
   staffCount: number;
 }
 
+export interface OrganizerBookingSummary {
+  id: string;
+  customerId: string;
+  status: BookingStatus;
+  totalAmount: number;
+  ticketCount: number;
+  createdAt: string;
+  eventId: string;
+  eventName: string;
+  customerName: string;
+  customerEmail: string;
+}
+
+export interface OrganizerTicketSummary {
+  id: string;
+  code: string;
+  status: TicketStatus;
+  createdAt: string;
+  eventId: string;
+  eventName: string;
+  ticketTypeName: string | null;
+  customerName: string;
+  customerEmail: string;
+  bookingId: string | null;
+}
+
 export interface EventAttendee {
   id: string;
   code: string;
@@ -184,6 +210,43 @@ export interface Ticket {
   bookingItem?: BookingItem;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface TicketDetails {
+  id: string;
+  code: string;
+  status: TicketStatus;
+  createdAt: string;
+  ticketType?: TicketType;
+  event?: {
+    id: string;
+    name: string;
+    startTime: string;
+    endTime?: string;
+    location?: string;
+    bannerUrl?: string | null;
+  };
+  booking?: {
+    id: string;
+    createdAt: string;
+  };
+  customer?: {
+    id: number;
+    email: string;
+    firstName: string | null;
+    lastName: string | null;
+    phoneNumber?: string | null;
+  } | null;
+  checkIn?: {
+    scannedAt: string;
+    method: string;
+    staff?: {
+      id: number;
+      email: string;
+      firstName: string | null;
+      lastName: string | null;
+    } | null;
+  } | null;
 }
 
 // Phase 4 — Check-In

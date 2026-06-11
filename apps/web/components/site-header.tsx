@@ -27,7 +27,7 @@ export function SiteHeader() {
         </Link>
 
         <nav className="flex items-center gap-2 md:gap-4">
-          {!isRole(RoleId.Staff) && (
+          {!isRole(RoleId.Staff) && !isRole(RoleId.Organizer) && (
             <Link
               href="/events"
               className={buttonVariants({ variant: 'ghost', size: 'lg', className: 'font-bold rounded-2xl text-base' })}
@@ -63,7 +63,7 @@ export function SiteHeader() {
 
           {loading ? null : user ? (
             <>
-              {!isRole(RoleId.Staff) && (
+              {isRole(RoleId.Customer) && (
                 <>
                   <Link
                     href="/my-bookings"

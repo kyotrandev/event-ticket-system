@@ -21,6 +21,9 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
+import { RolesGuard } from '../roles/roles.guard';
+import { Roles } from '../roles/roles.decorator';
+import { RoleEnum } from '../roles/roles.enum';
 import { Request as ExpressRequest } from 'express';
 import { CreateIntentResponseDto, PaymentsService } from './payments.service';
 import { JwtPayloadType } from '../auth/strategies/types/jwt-payload.type';
@@ -37,7 +40,8 @@ export class PaymentsController {
 
   @Post('intent/:bookingId')
   @ApiBearerAuth()
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(RoleEnum.customer)
   @HttpCode(HttpStatus.CREATED)
   @ApiParam({ name: 'bookingId', type: String, required: true })
   @ApiOkResponse({ type: CreateIntentResponseDto })
