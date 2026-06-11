@@ -86,25 +86,31 @@ export default function MyTicketsPage() {
       ) : (
         <div className="space-y-4">
           {tickets.map((t) => (
-            <Card key={t.id}>
-              <CardHeader>
-                <div className="flex items-start justify-between gap-4">
-                  <CardTitle className="text-base font-mono">{t.code}</CardTitle>
-                  <Badge variant={statusVariant(t.status)}>
-                    {t.status.toUpperCase()}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="flex items-start gap-4">
-                <QrImage code={t.code} />
-                <div className="text-sm space-y-1 text-muted-foreground">
-                  <p>
-                    Issued:{' '}
-                    {new Date(t.createdAt).toLocaleDateString('vi-VN')}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            <Link key={t.id} href={`/my-tickets/${t.code}`} className="block">
+              <Card className="hover:bg-muted/50 transition-colors cursor-pointer">
+                <CardHeader>
+                  <div className="flex items-start justify-between gap-4">
+                    <CardTitle className="text-base font-mono">{t.code}</CardTitle>
+                    <Badge variant={statusVariant(t.status)}>
+                      {t.status.toUpperCase()}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="flex items-start gap-4 flex-col sm:flex-row">
+                  <div className="shrink-0 bg-white p-2 rounded-lg shadow-sm border">
+                    <QrImage code={t.code} />
+                  </div>
+                  <div className="flex-1 text-sm space-y-2 text-muted-foreground w-full">
+                    <div className="grid grid-cols-2 gap-y-2">
+                      <div>
+                        <p className="font-medium text-foreground">Issued Date</p>
+                        <p>{new Date(t.createdAt).toLocaleDateString('vi-VN')}</p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </div>
       )}
