@@ -96,6 +96,18 @@ export class EventsController {
     return this.eventsService.findByOrganizer(String(req.user.id), page, limit);
   }
 
+  @ApiOkResponse({ type: [Object] })
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(RoleEnum.staff)
+  @Get('staff/assignments')
+  @HttpCode(HttpStatus.OK)
+  getStaffAssignments(
+    @Request() req: { user: JwtPayloadType },
+  ): Promise<any[]> {
+    return this.staffService.listByStaff(String(req.user.id));
+  }
+
   @ApiOkResponse({ type: Event })
   @SerializeOptions({ groups: [] })
   @Get(':id')

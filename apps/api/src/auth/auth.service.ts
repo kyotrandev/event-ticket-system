@@ -441,6 +441,7 @@ export class AuthService {
     }
 
     user.password = password;
+    user.isEmailVerified = true;
 
     await this.sessionService.deleteByUserId({
       userId: user.id,

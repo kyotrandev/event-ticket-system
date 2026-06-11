@@ -80,26 +80,11 @@ export default function TicketDetailPage() {
         
         setTicket(foundTicket);
         
-        // Fetch related event details
-        try {
-          const eventData = await api.get<EventModel>(`/events/${foundTicket.eventId}`);
-          setEvent(eventData);
-        } catch (eventErr) {
-          console.error("Failed to load event details", eventErr);
-        }
-
-        // Fetch related booking to get ticket type info
-        try {
-          const myBookings = await bookingApi.findMine();
-          for (const booking of myBookings) {
-            const item = booking.items?.find((i) => i.id === foundTicket.bookingItemId);
-            if (item) {
-              setBookingItem(item);
-              break;
-            }
+        if (foundTicket.bookingItem) {
+          setBookingItem(foundTicket.bookingItem);
+          if (foundTicket.bookingItem.ticketType?.event) {
+            setEvent(foundTicket.bookingItem.ticketType.event);
           }
-        } catch (bookingErr) {
-          console.error("Failed to load booking details", bookingErr);
         }
       } catch (err) {
         setError('Failed to load ticket details.');
