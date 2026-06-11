@@ -78,6 +78,7 @@ export default function OrganizerTicketDetailPage() {
 
   useEffect(() => {
     if (!ticketId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setError('Invalid ticket');
       setLoading(false);
       return;

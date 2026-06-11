@@ -39,7 +39,7 @@ export default function MyBookingsPage() {
   }, [bookings]);
 
   const visible = useMemo(() => {
-    let list = filterBookings(bookings, filter);
+    const list = filterBookings(bookings, filter);
     const q = search.trim().toLowerCase();
     if (!q) return list;
     return list.filter((b) => {

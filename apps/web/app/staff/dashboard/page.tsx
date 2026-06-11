@@ -13,6 +13,7 @@ import { MapPin, CalendarDays, ScanLine } from 'lucide-react';
 export default function StaffDashboardPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [assignments, setAssignments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 

@@ -84,7 +84,11 @@ export class TicketsService {
     const entities = await this.dataSource.getRepository(TicketEntity).find({
       where: { customerId },
       order: { createdAt: 'DESC' },
-      relations: ['bookingItem', 'bookingItem.ticketType', 'bookingItem.ticketType.event'],
+      relations: [
+        'bookingItem',
+        'bookingItem.ticketType',
+        'bookingItem.ticketType.event',
+      ],
     });
     return entities.map(TicketMapper.toDomain);
   }
@@ -163,7 +167,9 @@ export class TicketsService {
     }
 
     if (!isAdmin && !isCustomer && !isOrganizer) {
-      throw new ForbiddenException('Not allowed to view tickets for this booking');
+      throw new ForbiddenException(
+        'Not allowed to view tickets for this booking',
+      );
     }
 
     const items = await this.dataSource.getRepository(BookingItemEntity).find({
@@ -175,7 +181,11 @@ export class TicketsService {
     const entities = await this.dataSource.getRepository(TicketEntity).find({
       where: { bookingItemId: In(items.map((i) => i.id)) },
       order: { createdAt: 'ASC' },
-      relations: ['bookingItem', 'bookingItem.ticketType', 'bookingItem.ticketType.event'],
+      relations: [
+        'bookingItem',
+        'bookingItem.ticketType',
+        'bookingItem.ticketType.event',
+      ],
     });
     return entities.map(TicketMapper.toDomain);
   }
@@ -237,10 +247,7 @@ export class TicketsService {
     }
     if (filters.keyword?.trim()) {
       const kw = `%${filters.keyword.trim().toLowerCase()}%`;
-      qb.andWhere(
-        `(LOWER(t.code) LIKE :kw OR LOWER(e.name) LIKE :kw)`,
-        { kw },
-      );
+      qb.andWhere(`(LOWER(t.code) LIKE :kw OR LOWER(e.name) LIKE :kw)`, { kw });
     }
 
     const tickets = await qb.getMany();
@@ -276,10 +283,12 @@ export class TicketsService {
         eventName: event?.name ?? 'Unknown event',
         ticketTypeName: t.bookingItem?.ticketType?.name ?? null,
         customerName: user
-          ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email
+          ? `${user.firstName || ''} ${user.lastName || ''}`.trim() ||
+            user.email
           : 'Unknown',
         customerEmail: user?.email ?? 'Unknown',
-        bookingId: t.bookingItem?.booking?.id ?? t.bookingItem?.bookingId ?? null,
+        bookingId:
+          t.bookingItem?.booking?.id ?? t.bookingItem?.bookingId ?? null,
       };
     });
 
@@ -295,7 +304,11 @@ export class TicketsService {
       keyword?: string;
       organizerId?: string;
     },
-  ): Promise<InfinityPaginationResponseDto<import('./dto/admin-ticket-summary.dto').AdminTicketSummaryDto>> {
+  ): Promise<
+    InfinityPaginationResponseDto<
+      import('./dto/admin-ticket-summary.dto').AdminTicketSummaryDto
+    >
+  > {
     const cappedLimit = Math.min(limit, 50);
     const qb = this.dataSource
       .getRepository(TicketEntity)
@@ -352,7 +365,9 @@ export class TicketsService {
       `SELECT id, email, "firstName", "lastName" FROM "user" WHERE id = ANY($1)`,
       [allUserIds],
     );
-    const userMap = new Map(users.map((u: { id: number }) => [String(u.id), u]));
+    const userMap = new Map(
+      users.map((u: { id: number }) => [String(u.id), u]),
+    );
 
     const data = pageData.map((t) => {
       const user = userMap.get(t.customerId) as
@@ -361,7 +376,11 @@ export class TicketsService {
       const event = eventMap.get(t.eventId);
       const organizer = event
         ? (userMap.get(String(event.organizerId)) as
-            | { email: string; firstName: string | null; lastName: string | null }
+            | {
+                email: string;
+                firstName: string | null;
+                lastName: string | null;
+              }
             | undefined)
         : undefined;
       return {
@@ -373,10 +392,12 @@ export class TicketsService {
         eventName: event?.name ?? 'Unknown event',
         ticketTypeName: t.bookingItem?.ticketType?.name ?? null,
         customerName: user
-          ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email
+          ? `${user.firstName || ''} ${user.lastName || ''}`.trim() ||
+            user.email
           : 'Unknown',
         customerEmail: user?.email ?? 'Unknown',
-        bookingId: t.bookingItem?.booking?.id ?? t.bookingItem?.bookingId ?? null,
+        bookingId:
+          t.bookingItem?.booking?.id ?? t.bookingItem?.bookingId ?? null,
         organizerName: organizer
           ? `${organizer.firstName || ''} ${organizer.lastName || ''}`.trim() ||
             organizer.email
@@ -404,10 +425,10 @@ export class TicketsService {
     if (!tickets.length) return [];
 
     const customerIds = [...new Set(tickets.map((t) => Number(t.customerId)))];
-    
+
     const users = await this.dataSource.query(
       `SELECT id, email, "firstName", "lastName" FROM "user" WHERE id = ANY($1)`,
-      [customerIds]
+      [customerIds],
     );
     const userMap = new Map(users.map((u: any) => [String(u.id), u]));
 
@@ -419,18 +440,25 @@ export class TicketsService {
         status: t.status,
         createdAt: t.createdAt,
         ticketTypeName: t.bookingItem?.ticketType?.name,
-        customerName: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : 'Unknown',
+        customerName: user
+          ? `${user.firstName || ''} ${user.lastName || ''}`.trim()
+          : 'Unknown',
         customerEmail: user?.email || 'Unknown',
       };
     });
   }
 
-  async updateTicketStatus(ticketId: string, status: TicketStatusEnum): Promise<TicketEntity> {
-    const ticket = await this.dataSource.getRepository(TicketEntity).findOne({ where: { id: ticketId } });
+  async updateTicketStatus(
+    ticketId: string,
+    status: TicketStatusEnum,
+  ): Promise<TicketEntity> {
+    const ticket = await this.dataSource
+      .getRepository(TicketEntity)
+      .findOne({ where: { id: ticketId } });
     if (!ticket) {
       throw new NotFoundException('Ticket not found');
     }
-    
+
     ticket.status = status;
     return this.dataSource.getRepository(TicketEntity).save(ticket);
   }
@@ -442,7 +470,11 @@ export class TicketsService {
   ): Promise<any> {
     const ticket = await this.dataSource.getRepository(TicketEntity).findOne({
       where: { id: ticketId },
-      relations: ['bookingItem', 'bookingItem.booking', 'bookingItem.ticketType'],
+      relations: [
+        'bookingItem',
+        'bookingItem.booking',
+        'bookingItem.ticketType',
+      ],
     });
 
     if (!ticket) {
@@ -466,14 +498,14 @@ export class TicketsService {
 
     const log = await this.dataSource.query(
       `SELECT "scannedAt", method, "staffId" FROM check_in_log WHERE "ticketId" = $1`,
-      [ticket.id]
+      [ticket.id],
     );
 
     let checkInStaff = null;
     if (log.length > 0 && log[0].staffId) {
       const staffRows = await this.dataSource.query(
         `SELECT id, email, "firstName", "lastName" FROM "user" WHERE id = $1`,
-        [Number(log[0].staffId)]
+        [Number(log[0].staffId)],
       );
       if (staffRows.length > 0) checkInStaff = staffRows[0];
     }
@@ -497,11 +529,13 @@ export class TicketsService {
         createdAt: ticket.bookingItem?.booking?.createdAt,
       },
       customer: customer.length ? customer[0] : null,
-      checkIn: log.length ? {
-        scannedAt: log[0].scannedAt,
-        method: log[0].method,
-        staff: checkInStaff,
-      } : null,
+      checkIn: log.length
+        ? {
+            scannedAt: log[0].scannedAt,
+            method: log[0].method,
+            staff: checkInStaff,
+          }
+        : null,
     };
   }
 }

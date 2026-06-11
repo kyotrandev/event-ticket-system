@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsEnum, IsNumber, IsOptional, IsString, IsUUID, Min } from 'class-validator';
+import { IsEnum, IsNumber, IsOptional, IsUUID, Min } from 'class-validator';
 import { BookingStatusEnum } from '../booking-status.enum';
 
 export class QueryOrganizerBookingsDto {

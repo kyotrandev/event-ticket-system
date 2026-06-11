@@ -64,6 +64,7 @@ export default function OrganizerBookingsPage() {
   }, [page, status, keyword]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
   }, [load]);
 

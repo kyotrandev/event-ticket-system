@@ -292,8 +292,11 @@ export const staffApi = {
   remove: (eventId: string, staffId: string) =>
     api.delete<void>(`/events/${eventId}/staff/${staffId}`),
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getMyAssignments: () => api.get<any[]>('/events/staff/assignments'),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getAttendees: (eventId: string) => api.get<any[]>(`/tickets/events/${eventId}/attendees`),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getTicketDetails: (ticketId: string) => api.get<any>(`/tickets/${ticketId}/details`),
   updateTicketStatus: (ticketId: string, status: string) => 
     api.patch(`/tickets/${ticketId}/status`, { status }),

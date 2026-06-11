@@ -19,7 +19,9 @@ export class CheckInLogRelationalRepository {
     staffId: string;
     method: CheckInMethodEnum;
   }): Promise<CheckInLog> {
-    let entity = await this.repo.findOne({ where: { ticketId: data.ticketId } });
+    let entity = await this.repo.findOne({
+      where: { ticketId: data.ticketId },
+    });
     if (entity) {
       entity.staffId = data.staffId;
       entity.method = data.method;

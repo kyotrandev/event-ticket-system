@@ -114,13 +114,12 @@ export class EventsController {
     @Query() query: QueryEventDto,
     @Request() req: { user: JwtPayloadType },
   ): Promise<InfinityPaginationResponseDto<OrganizerEventSummaryDto>> {
-    return this.analyticsService.getOrganizerEvents(
-      String(req.user.id),
-      query,
-    );
+    return this.analyticsService.getOrganizerEvents(String(req.user.id), query);
   }
 
-  @ApiOkResponse({ type: InfinityPaginationResponse(OrganizerBookingSummaryDto) })
+  @ApiOkResponse({
+    type: InfinityPaginationResponse(OrganizerBookingSummaryDto),
+  })
   @ApiBearerAuth()
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(RoleEnum.organizer, RoleEnum.admin)
@@ -132,13 +131,20 @@ export class EventsController {
   ): Promise<InfinityPaginationResponseDto<OrganizerBookingSummaryDto>> {
     const page = query?.page ?? 1;
     const limit = Math.min(query?.limit ?? 20, 50);
-    return this.bookingsService.findByOrganizer(String(req.user.id), page, limit, {
-      eventId: query.eventId,
-      status: query.status,
-    });
+    return this.bookingsService.findByOrganizer(
+      String(req.user.id),
+      page,
+      limit,
+      {
+        eventId: query.eventId,
+        status: query.status,
+      },
+    );
   }
 
-  @ApiOkResponse({ type: InfinityPaginationResponse(OrganizerTicketSummaryDto) })
+  @ApiOkResponse({
+    type: InfinityPaginationResponse(OrganizerTicketSummaryDto),
+  })
   @ApiBearerAuth()
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(RoleEnum.organizer, RoleEnum.admin)
@@ -150,11 +156,16 @@ export class EventsController {
   ): Promise<InfinityPaginationResponseDto<OrganizerTicketSummaryDto>> {
     const page = query?.page ?? 1;
     const limit = Math.min(query?.limit ?? 20, 50);
-    return this.ticketsService.findByOrganizer(String(req.user.id), page, limit, {
-      eventId: query.eventId,
-      status: query.status,
-      keyword: query.keyword,
-    });
+    return this.ticketsService.findByOrganizer(
+      String(req.user.id),
+      page,
+      limit,
+      {
+        eventId: query.eventId,
+        status: query.status,
+        keyword: query.keyword,
+      },
+    );
   }
 
   @ApiOkResponse({ type: [Object] })

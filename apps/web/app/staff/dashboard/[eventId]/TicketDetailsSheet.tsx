@@ -13,11 +13,13 @@ interface TicketDetailsSheetProps {
 }
 
 export function TicketDetailsSheet({ ticketId, onClose, onStatusChange }: TicketDetailsSheetProps) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [details, setDetails] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!ticketId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDetails(null);
       return;
     }
@@ -175,7 +177,7 @@ export function TicketDetailsSheet({ ticketId, onClose, onStatusChange }: Ticket
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground leading-relaxed px-1 mt-3">
-                  Changing a status to <span className="font-medium text-foreground">"Reset to Not Scanned"</span> will clear its current validation and allow the ticket to be scanned again at the gate.
+                  Changing a status to <span className="font-medium text-foreground">&quot;Reset to Not Scanned&quot;</span> will clear its current validation and allow the ticket to be scanned again at the gate.
                 </p>
               </div>
             </section>

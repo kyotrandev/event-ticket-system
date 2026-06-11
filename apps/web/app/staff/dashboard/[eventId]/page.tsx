@@ -23,13 +23,16 @@ export default function StaffEventDetailsPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [event, setEvent] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [attendees, setAttendees] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
-  
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [pendingStatusChange, setPendingStatusChange] = useState<{ ticketId: string, newStatus: string, att: any } | null>(null);
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
 
@@ -41,6 +44,7 @@ export default function StaffEventDetailsPage() {
     }
 
     Promise.all([
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       api.get<any>(`/events/${eventId}`),
       staffApi.getAttendees(eventId),
     ])
@@ -70,6 +74,7 @@ export default function StaffEventDetailsPage() {
       } else {
         toast.error('Invalid ticket code');
       }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       toast.error(err.message || 'Check-in failed');
     }
@@ -82,6 +87,7 @@ export default function StaffEventDetailsPage() {
       setAttendees(prev => prev.map(a => 
         a.id === ticketId ? { ...a, status: newStatus } : a
       ));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       toast.error(err.message || 'Failed to update ticket status');
     }

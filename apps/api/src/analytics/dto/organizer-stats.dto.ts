@@ -7,7 +7,10 @@ export class OrganizerStatsDto {
   @ApiProperty()
   liveNow: number;
 
-  @ApiProperty({ description: 'Sum of PAID booking revenue across all organizer events (VND)' })
+  @ApiProperty({
+    description:
+      'Sum of PAID booking revenue across all organizer events (VND)',
+  })
   totalRevenue: number;
 
   @ApiProperty()

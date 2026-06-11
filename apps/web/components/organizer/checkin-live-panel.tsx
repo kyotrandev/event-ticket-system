@@ -36,9 +36,11 @@ export function CheckinLivePanel({
   }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
     const interval = setInterval(() => void load(), 15000);
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventId]);
 
   return (

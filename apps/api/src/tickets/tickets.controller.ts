@@ -22,7 +22,6 @@ import { AuthGuard } from '@nestjs/passport';
 import { Response as ExpressResponse } from 'express';
 import { TicketsService } from './tickets.service';
 import { Ticket } from './domain/ticket';
-import { CheckInResultDto } from '../check-in/dto/check-in-result.dto';
 import { TicketMapper } from './infrastructure/persistence/relational/mappers/ticket.mapper';
 import { JwtPayloadType } from '../auth/strategies/types/jwt-payload.type';
 import { RoleEnum } from '../roles/roles.enum';
@@ -104,9 +103,11 @@ export class TicketsController {
   async updateStatus(
     @Param('id') id: string,
     @Body() dto: { status: string },
-    @Request() req: { user: JwtPayloadType },
   ): Promise<Ticket> {
-    const updated = await this.ticketsService.updateTicketStatus(id, dto.status as any);
+    const updated = await this.ticketsService.updateTicketStatus(
+      id,
+      dto.status as any,
+    );
     return TicketMapper.toDomain(updated);
   }
 

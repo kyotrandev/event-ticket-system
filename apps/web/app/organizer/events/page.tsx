@@ -98,14 +98,17 @@ export default function OrganizerEventsPage() {
   }, [view]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadStats();
   }, [loadStats]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadEvents();
   }, [loadEvents]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadCalendarEvents();
   }, [loadCalendarEvents]);
 

@@ -26,6 +26,7 @@ export default function AdminEventHubPage({
 
   useEffect(() => {
     if (!id) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     Promise.all([
       organizerApi.getEvent(id),

@@ -1,6 +1,7 @@
 'use client';
 
 import { use, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { CalendarDays, MapPin, Tag } from 'lucide-react';
 import { toast } from 'sonner';
@@ -326,13 +327,13 @@ export default function EventDetailPage({
           {!canPurchase && user && (
             <div className="mt-6 rounded-2xl border-2 border-dashed border-border bg-muted/30 p-4 text-sm text-muted-foreground">
               Organizer accounts manage sales from{' '}
-              <a href="/organizer/bookings" className="font-bold text-primary underline">
+              <Link href="/organizer/bookings" className="font-bold text-primary underline">
                 Bookings
-              </a>{' '}
+              </Link>{' '}
               and{' '}
-              <a href="/organizer/tickets" className="font-bold text-primary underline">
+              <Link href="/organizer/tickets" className="font-bold text-primary underline">
                 Tickets
-              </a>
+              </Link>
               .
             </div>
           )}

@@ -135,20 +135,24 @@ export class EventStaffAssignmentsService {
 
     const eventMap = new Map(events.map((e) => [e.id, e]));
 
-    return assignments.map((a) => {
-      const e = eventMap.get(a.eventId);
-      return {
-        ...a,
-        event: e ? {
-          id: e.id,
-          name: e.name,
-          location: e.location,
-          startTime: e.startTime,
-          endTime: e.endTime,
-          bannerImage: e.bannerUrl,
-        } : null,
-      };
-    }).filter(a => a.event !== null);
+    return assignments
+      .map((a) => {
+        const e = eventMap.get(a.eventId);
+        return {
+          ...a,
+          event: e
+            ? {
+                id: e.id,
+                name: e.name,
+                location: e.location,
+                startTime: e.startTime,
+                endTime: e.endTime,
+                bannerImage: e.bannerUrl,
+              }
+            : null,
+        };
+      })
+      .filter((a) => a.event !== null);
   }
 
   async isAssigned(eventId: string, staffId: string): Promise<boolean> {
