@@ -72,6 +72,7 @@ export class EventsService {
       dateFrom: query.dateFrom,
       dateTo: query.dateTo,
       location: query.location,
+      status: query.status,
       page,
       limit,
     });

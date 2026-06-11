@@ -1,11 +1,15 @@
 import { TicketType } from '../../../../domain/ticket-type';
 import { TicketTypeEntity } from '../entities/ticket-type.entity';
+import { EventMapper } from '../../../../../events/infrastructure/persistence/relational/mappers/event.mapper';
 
 export class TicketTypeMapper {
   static toDomain(raw: TicketTypeEntity): TicketType {
     const domainEntity = new TicketType();
     domainEntity.id = raw.id;
     domainEntity.eventId = raw.eventId;
+    if (raw.event) {
+      domainEntity.event = EventMapper.toDomain(raw.event);
+    }
     domainEntity.name = raw.name;
     domainEntity.price = raw.price;
     domainEntity.totalQty = raw.totalQty;

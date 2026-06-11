@@ -47,4 +47,9 @@ export class QueryEventDto {
   @IsString()
   @IsOptional()
   location?: string;
+
+  @ApiPropertyOptional({ enum: ['draft', 'published', 'ongoing', 'ended', 'cancelled'] })
+  @IsString()
+  @IsOptional()
+  status?: string;
 }

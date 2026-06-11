@@ -59,7 +59,13 @@ export default function TicketDetailPage() {
   useEffect(() => {
     if (authLoading) return;
     if (!user) { router.replace('/login'); return; }
-    if (!code) { setError('Invalid ticket code'); setLoading(false); return; }
+    if (!code) { 
+      setTimeout(() => {
+        setError('Invalid ticket code'); 
+        setLoading(false); 
+      }, 0);
+      return; 
+    }
 
     async function fetchData() {
       try {
