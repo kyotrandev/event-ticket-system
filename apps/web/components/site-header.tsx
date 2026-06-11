@@ -27,12 +27,14 @@ export function SiteHeader() {
         </Link>
 
         <nav className="flex items-center gap-2 md:gap-4">
-          <Link
-            href="/events"
-            className={buttonVariants({ variant: 'ghost', size: 'lg', className: 'font-bold rounded-2xl text-base' })}
-          >
-            Browse
-          </Link>
+          {!isRole(RoleId.Staff) && (
+            <Link
+              href="/events"
+              className={buttonVariants({ variant: 'ghost', size: 'lg', className: 'font-bold rounded-2xl text-base' })}
+            >
+              Browse
+            </Link>
+          )}
 
           {isRole(RoleId.Organizer) && (
             <Link
@@ -50,15 +52,25 @@ export function SiteHeader() {
               Admin
             </Link>
           )}
+          {isRole(RoleId.Staff) && (
+            <Link
+              href="/staff/dashboard"
+              className={buttonVariants({ variant: 'ghost', size: 'lg', className: 'font-bold rounded-2xl text-base hidden md:inline-flex' })}
+            >
+              Dashboard
+            </Link>
+          )}
 
           {loading ? null : user ? (
             <>
-              <Link
-                href="/my-tickets"
-                className={buttonVariants({ variant: 'ghost', size: 'lg', className: 'font-bold rounded-2xl text-base hidden sm:inline-flex' })}
-              >
-                My tickets
-              </Link>
+              {!isRole(RoleId.Staff) && (
+                <Link
+                  href="/my-tickets"
+                  className={buttonVariants({ variant: 'ghost', size: 'lg', className: 'font-bold rounded-2xl text-base hidden sm:inline-flex' })}
+                >
+                  My tickets
+                </Link>
+              )}
               <span className="text-muted-foreground hidden text-sm font-medium sm:inline px-2">
                 {user.firstName ?? user.email}
               </span>

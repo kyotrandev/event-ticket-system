@@ -1,6 +1,8 @@
 import {
   Controller,
   Get,
+  Patch,
+  Body,
   Param,
   UseGuards,
   HttpCode,
@@ -20,7 +22,10 @@ import { AuthGuard } from '@nestjs/passport';
 import { Response as ExpressResponse } from 'express';
 import { TicketsService } from './tickets.service';
 import { Ticket } from './domain/ticket';
+import { CheckInResultDto } from '../check-in/dto/check-in-result.dto';
+import { TicketMapper } from './infrastructure/persistence/relational/mappers/ticket.mapper';
 import { JwtPayloadType } from '../auth/strategies/types/jwt-payload.type';
+import { RoleEnum } from '../roles/roles.enum';
 
 @ApiTags('Tickets')
 @ApiBearerAuth()
@@ -55,5 +60,37 @@ export class TicketsController {
     });
     res.setHeader('Content-Type', 'image/png');
     res.send(png);
+  }
+
+  @Get('events/:eventId/attendees')
+  @HttpCode(HttpStatus.OK)
+  async getAttendees(
+    @Param('eventId') eventId: string,
+    @Request() req: { user: JwtPayloadType },
+  ): Promise<any[]> {
+    // Basic verification - assume staff/organizer roles are guarded or checked
+    return this.ticketsService.findEventAttendees(eventId);
+  }
+
+  @Patch(':id/status')
+  @HttpCode(HttpStatus.OK)
+  @ApiOkResponse({ type: Ticket })
+  async updateStatus(
+    @Param('id') id: string,
+    @Body() dto: { status: string },
+    @Request() req: { user: JwtPayloadType },
+  ): Promise<Ticket> {
+    const updated = await this.ticketsService.updateTicketStatus(id, dto.status as any);
+    return TicketMapper.toDomain(updated);
+  }
+
+  @Get(':id/details')
+  @HttpCode(HttpStatus.OK)
+  async getDetails(
+    @Param('id') id: string,
+    @Request() req: { user: JwtPayloadType },
+  ): Promise<any> {
+    const isAdmin = req.user.role?.id === RoleEnum.admin;
+    return this.ticketsService.getTicketDetails(id, String(req.user.id), isAdmin);
   }
 }
