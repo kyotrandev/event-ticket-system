@@ -361,6 +361,49 @@ export const adminApi = {
   ) => api.patch<PromoCode>(`/promo-codes/${id}`, dto),
 
   deletePromoCode: (id: string) => api.delete<void>(`/promo-codes/${id}`),
+
+  getBookings: (query?: {
+    page?: number;
+    limit?: number;
+    eventId?: string;
+    status?: string;
+    keyword?: string;
+    organizerId?: string;
+  }) =>
+    api.get<{ data: import('./types').AdminBookingSummary[]; hasNextPage: boolean }>(
+      '/admin/bookings',
+      {
+        page: query?.page ?? 1,
+        limit: query?.limit ?? 20,
+        eventId: query?.eventId || undefined,
+        status: query?.status || undefined,
+        keyword: query?.keyword || undefined,
+        organizerId: query?.organizerId || undefined,
+      },
+    ),
+
+  getTickets: (query?: {
+    page?: number;
+    limit?: number;
+    eventId?: string;
+    status?: string;
+    keyword?: string;
+    organizerId?: string;
+  }) =>
+    api.get<{ data: import('./types').AdminTicketSummary[]; hasNextPage: boolean }>(
+      '/admin/tickets',
+      {
+        page: query?.page ?? 1,
+        limit: query?.limit ?? 20,
+        eventId: query?.eventId || undefined,
+        status: query?.status || undefined,
+        keyword: query?.keyword || undefined,
+        organizerId: query?.organizerId || undefined,
+      },
+    ),
+
+  getUser: (id: number | string) =>
+    api.get<import('./types').User>(`/users/${id}`),
 };
 
 // --- Organizer endpoints ---

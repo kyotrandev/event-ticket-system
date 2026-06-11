@@ -86,6 +86,18 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       icon: Tag,
       isActive: (p) => p.startsWith('/admin/promo-codes'),
     },
+    {
+      href: '/admin/bookings',
+      label: 'Bookings',
+      icon: Receipt,
+      isActive: (p) => p.startsWith('/admin/bookings'),
+    },
+    {
+      href: '/admin/tickets',
+      label: 'Tickets',
+      icon: Ticket,
+      isActive: (p) => p.startsWith('/admin/tickets'),
+    },
   ];
 
   const comingSoon: NavItem[] = [
@@ -93,20 +105,6 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       href: '#',
       label: 'Events',
       icon: CalendarDays,
-      isActive: () => false,
-      disabled: true,
-    },
-    {
-      href: '#',
-      label: 'Bookings',
-      icon: Receipt,
-      isActive: () => false,
-      disabled: true,
-    },
-    {
-      href: '#',
-      label: 'Tickets',
-      icon: Ticket,
       isActive: () => false,
       disabled: true,
     },

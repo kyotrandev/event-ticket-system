@@ -17,9 +17,13 @@ function statusVariant(
 export function OrganizerTicketsTable({
   tickets,
   showEvent = true,
+  showOrganizer = false,
+  detailBase = '/organizer/tickets',
 }: {
-  tickets: OrganizerTicketSummary[];
+  tickets: (OrganizerTicketSummary & { organizerName?: string; organizerEmail?: string })[];
   showEvent?: boolean;
+  showOrganizer?: boolean;
+  detailBase?: string;
 }) {
   if (!tickets.length) {
     return (
@@ -37,6 +41,7 @@ export function OrganizerTicketsTable({
             <tr className="text-left">
               <th className="px-4 py-3 font-bold">Code</th>
               {showEvent && <th className="px-4 py-3 font-bold">Event</th>}
+              {showOrganizer && <th className="px-4 py-3 font-bold">Organizer</th>}
               <th className="px-4 py-3 font-bold">Type</th>
               <th className="px-4 py-3 font-bold">Customer</th>
               <th className="px-4 py-3 font-bold">Status</th>
@@ -51,6 +56,12 @@ export function OrganizerTicketsTable({
                 {showEvent && (
                   <td className="px-4 py-3 font-semibold max-w-[180px] truncate">
                     {t.eventName}
+                  </td>
+                )}
+                {showOrganizer && (
+                  <td className="px-4 py-3">
+                    <p className="font-medium">{t.organizerName ?? '—'}</p>
+                    <p className="text-xs text-muted-foreground">{t.organizerEmail ?? ''}</p>
                   </td>
                 )}
                 <td className="px-4 py-3">{t.ticketTypeName ?? '—'}</td>
@@ -68,7 +79,7 @@ export function OrganizerTicketsTable({
                 </td>
                 <td className="px-4 py-3 text-right">
                   <Link
-                    href={`/organizer/tickets/${t.id}`}
+                    href={`${detailBase}/${t.id}`}
                     className={buttonVariants({ variant: 'outline', size: 'sm', className: 'rounded-xl font-bold' })}
                   >
                     View

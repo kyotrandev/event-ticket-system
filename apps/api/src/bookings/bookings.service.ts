@@ -628,6 +628,110 @@ export class BookingsService {
     return { data, hasNextPage };
   }
 
+  async findAllForAdmin(
+    page: number,
+    limit: number,
+    filters: {
+      eventId?: string;
+      status?: BookingStatusEnum;
+      keyword?: string;
+      organizerId?: string;
+    },
+  ): Promise<InfinityPaginationResponseDto<import('./dto/admin-booking-summary.dto').AdminBookingSummaryDto>> {
+    const cappedLimit = Math.min(limit, 50);
+    const qb = this.dataSource
+      .getRepository(BookingEntity)
+      .createQueryBuilder('b')
+      .innerJoin('b.items', 'bi')
+      .innerJoin('bi.ticketType', 'tt')
+      .innerJoin('tt.event', 'e')
+      .distinct(true)
+      .orderBy('b.createdAt', 'DESC')
+      .skip((page - 1) * cappedLimit)
+      .take(cappedLimit + 1);
+
+    if (filters.eventId) {
+      qb.andWhere('e.id = :eventId', { eventId: filters.eventId });
+    }
+    if (filters.organizerId) {
+      qb.andWhere('e.organizerId = :organizerId', {
+        organizerId: filters.organizerId,
+      });
+    }
+    if (filters.status) {
+      qb.andWhere('b.status = :status', { status: filters.status });
+    }
+    if (filters.keyword?.trim()) {
+      const kw = `%${filters.keyword.trim().toLowerCase()}%`;
+      qb.andWhere(
+        `(LOWER(e.name) LIKE :kw OR LOWER(b.id::text) LIKE :kw OR EXISTS (
+          SELECT 1 FROM "user" u
+          WHERE u.id = b."customerId"::int
+            AND (LOWER(u.email) LIKE :kw OR LOWER(u."firstName") LIKE :kw OR LOWER(u."lastName") LIKE :kw)
+        ))`,
+        { kw },
+      );
+    }
+
+    const entities = await qb
+      .leftJoinAndSelect('b.items', 'items')
+      .leftJoinAndSelect('items.ticketType', 'ticketType')
+      .leftJoinAndSelect('ticketType.event', 'event')
+      .getMany();
+
+    const hasNextPage = entities.length > cappedLimit;
+    const pageData = hasNextPage ? entities.slice(0, cappedLimit) : entities;
+
+    const customerIds = [...new Set(pageData.map((b) => Number(b.customerId)))];
+    const organizerIds = [
+      ...new Set(
+        pageData
+          .map((b) => b.items?.[0]?.ticketType?.event?.organizerId)
+          .filter(Boolean)
+          .map(String),
+      ),
+    ];
+    const allUserIds = [...new Set([...customerIds, ...organizerIds.map(Number)])];
+    const users = allUserIds.length
+      ? await this.dataSource.getRepository(UserEntity).find({
+          where: { id: In(allUserIds) },
+        })
+      : [];
+    const userMap = new Map(users.map((u) => [String(u.id), u]));
+
+    const data = pageData.map((b) => {
+      const firstItem = b.items?.[0];
+      const event = firstItem?.ticketType?.event;
+      const customer = userMap.get(String(b.customerId));
+      const organizer = event?.organizerId
+        ? userMap.get(String(event.organizerId))
+        : undefined;
+      const ticketCount = (b.items ?? []).reduce((s, i) => s + i.quantity, 0);
+      return {
+        id: b.id,
+        customerId: b.customerId,
+        status: b.status,
+        totalAmount: b.totalAmount,
+        ticketCount,
+        createdAt: b.createdAt,
+        eventId: event?.id ?? firstItem?.ticketType?.eventId ?? '',
+        eventName: event?.name ?? 'Unknown event',
+        customerName: customer
+          ? `${customer.firstName ?? ''} ${customer.lastName ?? ''}`.trim() ||
+            (customer.email ?? 'Unknown')
+          : 'Unknown',
+        customerEmail: customer?.email ?? 'Unknown',
+        organizerName: organizer
+          ? `${organizer.firstName ?? ''} ${organizer.lastName ?? ''}`.trim() ||
+            (organizer.email ?? 'Unknown')
+          : 'Unknown',
+        organizerEmail: organizer?.email ?? 'Unknown',
+      };
+    });
+
+    return { data, hasNextPage };
+  }
+
   async isOrganizerBooking(
     bookingId: string,
     organizerId: string,

@@ -15,9 +15,11 @@ import { buttonVariants } from '@/components/ui/button';
 export function OrganizerBookingsTable({
   bookings,
   detailBase = '/organizer/bookings',
+  showOrganizer = false,
 }: {
-  bookings: OrganizerBookingSummary[];
+  bookings: (OrganizerBookingSummary & { organizerName?: string; organizerEmail?: string })[];
   detailBase?: string;
+  showOrganizer?: boolean;
 }) {
   if (!bookings.length) {
     return (
@@ -35,6 +37,7 @@ export function OrganizerBookingsTable({
             <tr className="text-left">
               <th className="px-4 py-3 font-bold">Order</th>
               <th className="px-4 py-3 font-bold">Event</th>
+              {showOrganizer && <th className="px-4 py-3 font-bold">Organizer</th>}
               <th className="px-4 py-3 font-bold">Customer</th>
               <th className="px-4 py-3 font-bold">Tickets</th>
               <th className="px-4 py-3 font-bold">Total</th>
@@ -50,6 +53,12 @@ export function OrganizerBookingsTable({
                 <td className="px-4 py-3 font-semibold max-w-[180px] truncate">
                   {b.eventName}
                 </td>
+                {showOrganizer && (
+                  <td className="px-4 py-3">
+                    <p className="font-medium">{b.organizerName ?? '—'}</p>
+                    <p className="text-xs text-muted-foreground">{b.organizerEmail ?? ''}</p>
+                  </td>
+                )}
                 <td className="px-4 py-3">
                   <p className="font-medium">{b.customerName}</p>
                   <p className="text-xs text-muted-foreground">{b.customerEmail}</p>

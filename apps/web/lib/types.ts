@@ -152,6 +152,16 @@ export interface OrganizerTicketSummary {
   bookingId: string | null;
 }
 
+export interface AdminBookingSummary extends OrganizerBookingSummary {
+  organizerName: string;
+  organizerEmail: string;
+}
+
+export interface AdminTicketSummary extends OrganizerTicketSummary {
+  organizerName: string;
+  organizerEmail: string;
+}
+
 export interface EventAttendee {
   id: string;
   code: string;
