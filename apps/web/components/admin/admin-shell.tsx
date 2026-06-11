@@ -87,6 +87,12 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       isActive: (p) => p.startsWith('/admin/promo-codes'),
     },
     {
+      href: '/admin/events',
+      label: 'Events',
+      icon: CalendarDays,
+      isActive: (p) => p.startsWith('/admin/events'),
+    },
+    {
       href: '/admin/bookings',
       label: 'Bookings',
       icon: Receipt,
@@ -97,16 +103,6 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       label: 'Tickets',
       icon: Ticket,
       isActive: (p) => p.startsWith('/admin/tickets'),
-    },
-  ];
-
-  const comingSoon: NavItem[] = [
-    {
-      href: '#',
-      label: 'Events',
-      icon: CalendarDays,
-      isActive: () => false,
-      disabled: true,
     },
   ];
 
@@ -159,25 +155,6 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               );
             })}
 
-            <p className="px-3 pt-4 pb-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">
-              Phase 2
-            </p>
-            {comingSoon.map((item) => {
-              const Icon = item.icon;
-              return (
-                <span
-                  key={item.label}
-                  className="flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium text-muted-foreground/50 cursor-not-allowed"
-                  title="Coming in Phase 2"
-                >
-                  <Icon className="size-4 shrink-0" />
-                  <span className="flex-1">{item.label}</span>
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                    Soon
-                  </Badge>
-                </span>
-              );
-            })}
           </nav>
         </aside>
 

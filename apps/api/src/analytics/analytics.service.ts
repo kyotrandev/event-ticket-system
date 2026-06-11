@@ -16,6 +16,8 @@ import { AdminStatsDto } from './dto/admin-stats.dto';
 import { OrganizerStatsDto } from './dto/organizer-stats.dto';
 import { OrganizerEventSummaryDto } from '../events/dto/organizer-event-summary.dto';
 import { QueryEventDto } from '../events/dto/query-event.dto';
+import { AdminEventSummaryDto } from '../admin/dto/admin-event-summary.dto';
+import { QueryAdminEventsDto } from '../admin/dto/query-admin-events.dto';
 import { InfinityPaginationResponseDto } from '../utils/dto/infinity-pagination-response.dto';
 
 @Injectable()
@@ -486,6 +488,162 @@ export class AnalyticsService {
       ticketTypeCount: Number(r.ticket_type_count),
       staffCount: Number(r.staff_count),
     }));
+
+    return { data, hasNextPage };
+  }
+
+  async getAllEvents(
+    query: QueryAdminEventsDto,
+  ): Promise<InfinityPaginationResponseDto<AdminEventSummaryDto>> {
+    const page = query.page ?? 1;
+    const limit = Math.min(query.limit ?? 12, 50);
+    const offset = (page - 1) * limit;
+    const sort = query.sort ?? 'createdAt';
+
+    const params: unknown[] = [];
+    let paramIdx = 1;
+    const conditions = [`e."deletedAt" IS NULL`];
+
+    if (query.organizerId) {
+      conditions.push(`e."organizerId" = $${paramIdx}`);
+      params.push(query.organizerId);
+      paramIdx++;
+    }
+    if (query.keyword) {
+      conditions.push(
+        `(e.name ILIKE $${paramIdx} OR e.description ILIKE $${paramIdx})`,
+      );
+      params.push(`%${query.keyword}%`);
+      paramIdx++;
+    }
+    if (query.status) {
+      conditions.push(`e.status = $${paramIdx}`);
+      params.push(query.status);
+      paramIdx++;
+    }
+    if (query.category) {
+      conditions.push(`e.category ILIKE $${paramIdx}`);
+      params.push(`%${query.category}%`);
+      paramIdx++;
+    }
+    if (query.dateFrom) {
+      conditions.push(`e."startTime" >= $${paramIdx}`);
+      params.push(new Date(query.dateFrom));
+      paramIdx++;
+    }
+    if (query.dateTo) {
+      conditions.push(`e."endTime" <= $${paramIdx}`);
+      params.push(new Date(query.dateTo));
+      paramIdx++;
+    }
+
+    const orderMap: Record<string, string> = {
+      createdAt: 'e."createdAt" DESC',
+      startTime: 'e."startTime" ASC',
+      revenue: 'revenue DESC',
+      sold: 'tickets_sold DESC',
+      name: 'e.name ASC',
+    };
+    const orderBy = orderMap[sort] ?? orderMap.createdAt;
+    const whereClause = conditions.join(' AND ');
+
+    params.push(limit + 1, offset);
+    const limitParam = paramIdx;
+    const offsetParam = paramIdx + 1;
+
+    const rows: Array<Record<string, unknown>> = await this.dataSource.query(
+      `SELECT e.id, e."organizerId", e.name, e.description, e.location, e.category,
+              e.tags, e."startTime", e."endTime", e."bannerUrl",
+              e."cancellationWindowHours", e."maxTicketsPerOrder", e.status,
+              e."createdAt", e."updatedAt", e."deletedAt",
+              COALESCE(tts.tickets_sold, 0)::int as tickets_sold,
+              COALESCE(tts.total_capacity, 0)::int as total_capacity,
+              COALESCE(tts.ticket_type_count, 0)::int as ticket_type_count,
+              COALESCE(rev.revenue, 0)::bigint as revenue,
+              COALESCE(st.staff_count, 0)::int as staff_count,
+              CASE
+                WHEN COALESCE(ci.checkin_total, 0) = 0 THEN 0
+                ELSE ROUND((ci.checkin_used::numeric / ci.checkin_total) * 10000) / 100
+              END as check_in_rate,
+              org."firstName" as org_first_name,
+              org."lastName" as org_last_name,
+              org.email as org_email
+       FROM event e
+       LEFT JOIN "user" org ON org.id = e."organizerId"::int
+       LEFT JOIN (
+         SELECT "eventId",
+                SUM("soldQty") as tickets_sold,
+                SUM("totalQty") as total_capacity,
+                COUNT(*)::int as ticket_type_count
+         FROM ticket_type
+         GROUP BY "eventId"
+       ) tts ON tts."eventId" = e.id
+       LEFT JOIN (
+         SELECT tt."eventId",
+                COALESCE(SUM(
+                  CASE WHEN b.status = '${BookingStatusEnum.PAID}' THEN ${this.allocatedItemRevenueSql()}
+                       WHEN b.status = '${BookingStatusEnum.REFUNDED}' THEN -(${this.allocatedItemRevenueSql()})
+                       ELSE 0 END
+                ), 0) as revenue
+         FROM booking b
+         JOIN booking_item bi ON bi."bookingId" = b.id
+         JOIN ticket_type tt ON tt.id = bi."ticketTypeId"
+         WHERE b.status IN ('${BookingStatusEnum.PAID}', '${BookingStatusEnum.REFUNDED}')
+         GROUP BY tt."eventId"
+       ) rev ON rev."eventId" = e.id
+       LEFT JOIN (
+         SELECT "eventId", COUNT(*)::int as staff_count
+         FROM event_staff_assignment
+         GROUP BY "eventId"
+       ) st ON st."eventId" = e.id
+       LEFT JOIN (
+         SELECT "eventId",
+                COUNT(CASE WHEN status = '${TicketStatusEnum.USED}' THEN 1 END)::int as checkin_used,
+                COUNT(CASE WHEN status IN ('${TicketStatusEnum.USED}', '${TicketStatusEnum.ISSUED}') THEN 1 END)::int as checkin_total
+         FROM ticket
+         GROUP BY "eventId"
+       ) ci ON ci."eventId" = e.id
+       WHERE ${whereClause}
+       ORDER BY ${orderBy}
+       LIMIT $${limitParam} OFFSET $${offsetParam}`,
+      params,
+    );
+
+    const hasNextPage = rows.length > limit;
+    const pageRows = hasNextPage ? rows.slice(0, limit) : rows;
+
+    const data: AdminEventSummaryDto[] = pageRows.map((r) => {
+      const orgName =
+        `${(r.org_first_name as string) ?? ''} ${(r.org_last_name as string) ?? ''}`.trim() ||
+        (r.org_email as string) ||
+        'Unknown';
+      return {
+        id: r.id as string,
+        organizerId: r.organizerId as string,
+        name: r.name as string,
+        description: r.description as string | null,
+        location: r.location as string,
+        category: r.category as string,
+        tags: r.tags as string[] | null,
+        startTime: r.startTime as Date,
+        endTime: r.endTime as Date,
+        bannerUrl: r.bannerUrl as string | null,
+        cancellationWindowHours: r.cancellationWindowHours as number,
+        maxTicketsPerOrder: r.maxTicketsPerOrder as number,
+        status: r.status as OrganizerEventSummaryDto['status'],
+        createdAt: r.createdAt as Date,
+        updatedAt: r.updatedAt as Date,
+        deletedAt: r.deletedAt as Date | null,
+        ticketsSold: Number(r.tickets_sold),
+        totalCapacity: Number(r.total_capacity),
+        revenue: Number(r.revenue),
+        checkInRate: Number(r.check_in_rate),
+        ticketTypeCount: Number(r.ticket_type_count),
+        staffCount: Number(r.staff_count),
+        organizerName: orgName,
+        organizerEmail: (r.org_email as string) ?? 'Unknown',
+      };
+    });
 
     return { data, hasNextPage };
   }

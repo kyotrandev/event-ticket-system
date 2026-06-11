@@ -27,6 +27,10 @@ import { AdminBookingSummaryDto } from '../bookings/dto/admin-booking-summary.dt
 import { AdminTicketSummaryDto } from '../tickets/dto/admin-ticket-summary.dto';
 import { QueryAdminBookingsDto } from './dto/query-admin-bookings.dto';
 import { QueryAdminTicketsDto } from './dto/query-admin-tickets.dto';
+import { QueryAdminEventsDto } from './dto/query-admin-events.dto';
+import { AdminEventSummaryDto } from './dto/admin-event-summary.dto';
+import { AuditLogsService } from '../audit-logs/audit-logs.service';
+import { AuditLog } from '../audit-logs/domain/audit-log';
 
 class PendingOrganizersQueryDto {
   page?: number;
@@ -44,6 +48,7 @@ export class AdminController {
     private readonly usersService: UsersService,
     private readonly bookingsService: BookingsService,
     private readonly ticketsService: TicketsService,
+    private readonly auditLogsService: AuditLogsService,
   ) {}
 
   @ApiOkResponse({ type: AdminStatsDto })
@@ -100,5 +105,26 @@ export class AdminController {
       keyword: query.keyword,
       organizerId: query.organizerId,
     });
+  }
+
+  @ApiOkResponse({ type: InfinityPaginationResponse(AdminEventSummaryDto) })
+  @Get('events')
+  @HttpCode(HttpStatus.OK)
+  getEvents(
+    @Query() query: QueryAdminEventsDto,
+  ): Promise<InfinityPaginationResponseDto<AdminEventSummaryDto>> {
+    return this.analyticsService.getAllEvents(query);
+  }
+
+  @ApiOkResponse({ type: InfinityPaginationResponse(AuditLog) })
+  @Get('audit-logs')
+  @HttpCode(HttpStatus.OK)
+  async getAuditLogs(
+    @Query() query: PendingOrganizersQueryDto,
+  ): Promise<InfinityPaginationResponseDto<AuditLog>> {
+    const page = query.page ?? 1;
+    const limit = Math.min(query.limit ?? 30, 100);
+    const result = await this.auditLogsService.findPaginated(page, limit);
+    return { data: result.data, hasNextPage: result.hasNextPage };
   }
 }
