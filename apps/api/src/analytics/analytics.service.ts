@@ -10,6 +10,7 @@ import { BookingStatusEnum } from '../bookings/booking-status.enum';
 import { EventStatusEnum } from '../events/event-status.enum';
 import { TicketStatusEnum } from '../tickets/ticket-status.enum';
 import { RoleEnum } from '../roles/roles.enum';
+import { StatusEnum } from '../statuses/statuses.enum';
 import { EventAnalyticsDto } from './dto/event-analytics.dto';
 import { AdminStatsDto } from './dto/admin-stats.dto';
 import { OrganizerStatsDto } from './dto/organizer-stats.dto';
@@ -183,6 +184,9 @@ export class AnalyticsService {
       bookingsByStatus,
       [revenueRow],
       [refundsRow],
+      [pendingRow],
+      [ticketsSoldRow],
+      dailyRows,
     ] = await Promise.all([
       this.dataSource.query(
         `SELECT "roleId", COUNT(*) as count
@@ -215,6 +219,38 @@ export class AnalyticsService {
            FROM booking WHERE status = $1`,
         [BookingStatusEnum.REFUNDED],
       ) as Promise<Array<{ total: string }>>,
+
+      this.dataSource.query(
+        `SELECT COUNT(*)::int as count
+           FROM "user"
+           WHERE "deletedAt" IS NULL
+             AND "roleId" = $1
+             AND "statusId" = $2`,
+        [RoleEnum.organizer, StatusEnum.pending_approval],
+      ) as Promise<Array<{ count: number }>>,
+
+      this.dataSource.query(
+        `SELECT COALESCE(SUM(tt."soldQty"), 0)::int as sold
+           FROM ticket_type tt
+           JOIN event e ON e.id = tt."eventId"
+           WHERE e."deletedAt" IS NULL`,
+      ) as Promise<Array<{ sold: number }>>,
+
+      this.dataSource.query(
+        `SELECT DATE(b."createdAt")::text as date,
+                COUNT(DISTINCT b.id)::int as bookings,
+                COALESCE(SUM(
+                  CASE WHEN b.status = $1 THEN b."totalAmount"
+                       WHEN b.status = $2 THEN -b."totalAmount"
+                       ELSE 0 END
+                ), 0)::bigint as revenue
+         FROM booking b
+         WHERE b."createdAt" >= NOW() - INTERVAL '30 days'
+           AND b.status IN ($1, $2)
+         GROUP BY DATE(b."createdAt")
+         ORDER BY DATE(b."createdAt")`,
+        [BookingStatusEnum.PAID, BookingStatusEnum.REFUNDED],
+      ) as Promise<Array<{ date: string; bookings: number; revenue: string }>>,
     ]);
 
     const userMap = Object.fromEntries(
@@ -226,6 +262,9 @@ export class AnalyticsService {
     const bookingMap = Object.fromEntries(
       bookingsByStatus.map((r) => [r.status, Number(r.count)]),
     );
+
+    const totalGrossRevenue = Number(revenueRow.total);
+    const totalRefunds = Number(refundsRow.total);
 
     return {
       users: {
@@ -249,8 +288,17 @@ export class AnalyticsService {
         failed: bookingMap[BookingStatusEnum.FAILED] ?? 0,
         refunded: bookingMap[BookingStatusEnum.REFUNDED] ?? 0,
       },
-      totalGrossRevenue: Number(revenueRow.total),
-      totalRefunds: Number(refundsRow.total),
+      totalGrossRevenue,
+      totalRefunds,
+      netRevenue: totalGrossRevenue - totalRefunds,
+      pendingOrganizers: Number(pendingRow?.count ?? 0),
+      totalTicketsSold: Number(ticketsSoldRow?.sold ?? 0),
+      liveEvents: eventMap[EventStatusEnum.ONGOING] ?? 0,
+      dailyStats: dailyRows.map((r) => ({
+        date: r.date,
+        bookings: Number(r.bookings),
+        revenue: Number(r.revenue),
+      })),
     };
   }
 

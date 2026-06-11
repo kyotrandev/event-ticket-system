@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { adminApi } from '@/lib/api';
-import { AdminLayout } from '@/components/admin-layout';
 import { Button } from '@/components/ui/button';
 import type { User } from '@/lib/types';
 
@@ -21,30 +21,40 @@ export default function PendingOrganizersPage() {
   }, []);
 
   async function handleDecision(user: User, approve: boolean) {
+    if (!approve) {
+      const name = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || user.email;
+      if (!confirm(`Reject application from ${name}? This cannot be undone.`)) return;
+    }
+
     setActioning(user.id);
     setError(null);
     try {
       if (approve) {
         await adminApi.approveOrganizer(user.id);
+        toast.success('Organizer approved');
       } else {
         await adminApi.rejectOrganizer(user.id);
+        toast.success('Application rejected');
       }
       setUsers((prev) => prev.filter((u) => u.id !== user.id));
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Action failed');
+      const msg = e instanceof Error ? e.message : 'Action failed';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setActioning(null);
     }
   }
 
   return (
-    <AdminLayout>
-      <h1 className="text-2xl font-bold mb-6">Pending Organizer Applications</h1>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-extrabold tracking-tight">Pending Organizers</h1>
+        <p className="text-muted-foreground mt-1">Review and approve organizer applications.</p>
+      </div>
 
       {error && (
-        <div className="rounded-lg bg-destructive/10 text-destructive p-3 text-sm mb-4">
-          {error}
-        </div>
+        <div className="rounded-2xl bg-destructive/10 text-destructive p-3 text-sm">{error}</div>
       )}
 
       {loading && <p className="text-muted-foreground">Loading…</p>}
@@ -54,42 +64,50 @@ export default function PendingOrganizersPage() {
       )}
 
       {users.length > 0 && (
-        <div className="overflow-x-auto rounded-lg border">
+        <div className="overflow-x-auto rounded-2xl border-2">
           <table className="w-full text-sm">
-            <thead className="bg-muted text-muted-foreground">
+            <thead className="bg-muted/60 text-muted-foreground">
               <tr>
-                <th className="px-3 py-2 text-left">Name</th>
-                <th className="px-3 py-2 text-left">Email</th>
-                <th className="px-3 py-2 text-left">Applied</th>
-                <th className="px-3 py-2 text-left">Actions</th>
+                <th className="px-4 py-3 text-left font-semibold">Name</th>
+                <th className="px-4 py-3 text-left font-semibold">Email</th>
+                <th className="px-4 py-3 text-left font-semibold">Company</th>
+                <th className="px-4 py-3 text-left font-semibold">Phone</th>
+                <th className="px-4 py-3 text-left font-semibold">Applied</th>
+                <th className="px-4 py-3 text-left font-semibold">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y">
               {users.map((u) => (
                 <tr key={u.id} className="hover:bg-muted/30">
-                  <td className="px-3 py-2 font-medium">
+                  <td className="px-4 py-3 font-medium">
                     {u.firstName ?? ''} {u.lastName ?? ''}
                   </td>
-                  <td className="px-3 py-2 text-muted-foreground">{u.email ?? '—'}</td>
-                  <td className="px-3 py-2 text-muted-foreground">
+                  <td className="px-4 py-3 text-muted-foreground">{u.email ?? '—'}</td>
+                  <td className="px-4 py-3">{u.companyName ?? '—'}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{u.phoneNumber ?? '—'}</td>
+                  <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
                     {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '—'}
                   </td>
-                  <td className="px-3 py-2 flex gap-2">
-                    <Button
-                      size="sm"
-                      disabled={actioning === u.id}
-                      onClick={() => void handleDecision(u, true)}
-                    >
-                      {actioning === u.id ? '…' : 'Approve'}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      disabled={actioning === u.id}
-                      onClick={() => void handleDecision(u, false)}
-                    >
-                      Reject
-                    </Button>
+                  <td className="px-4 py-3">
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        className="rounded-xl"
+                        disabled={actioning === u.id}
+                        onClick={() => void handleDecision(u, true)}
+                      >
+                        {actioning === u.id ? '…' : 'Approve'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="rounded-xl"
+                        disabled={actioning === u.id}
+                        onClick={() => void handleDecision(u, false)}
+                      >
+                        Reject
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -97,6 +115,6 @@ export default function PendingOrganizersPage() {
           </table>
         </div>
       )}
-    </AdminLayout>
+    </div>
   );
 }

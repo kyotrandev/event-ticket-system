@@ -24,6 +24,12 @@ export class BookingsByStatusDto {
   @ApiProperty() refunded: number;
 }
 
+export class AdminDailyStatDto {
+  @ApiProperty() date: string;
+  @ApiProperty() bookings: number;
+  @ApiProperty() revenue: number;
+}
+
 export class AdminStatsDto {
   @ApiProperty({ type: UsersByRoleDto })
   users: UsersByRoleDto;
@@ -41,4 +47,19 @@ export class AdminStatsDto {
     description: 'Sum of all REFUNDED bookings totalAmount (VND)',
   })
   totalRefunds: number;
+
+  @ApiProperty({ description: 'Gross revenue minus refunds (VND)' })
+  netRevenue: number;
+
+  @ApiProperty({ description: 'Organizers awaiting approval' })
+  pendingOrganizers: number;
+
+  @ApiProperty({ description: 'Total soldQty across all ticket types' })
+  totalTicketsSold: number;
+
+  @ApiProperty({ description: 'Events with ONGOING status' })
+  liveEvents: number;
+
+  @ApiProperty({ type: [AdminDailyStatDto], description: 'Last 30 days' })
+  dailyStats: AdminDailyStatDto[];
 }

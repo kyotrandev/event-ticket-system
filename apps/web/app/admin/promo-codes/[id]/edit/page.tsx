@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import { adminApi } from '@/lib/api';
-import { AdminLayout } from '@/components/admin-layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -27,27 +27,22 @@ export default function EditPromoCodePage() {
   const [codeName, setCodeName] = useState('');
 
   useEffect(() => {
-    if (id) {
-      adminApi.getPromoCodes(1, 1000) // Fetch all to find the one
-        .then(res => {
-          const code = res.data.find(c => c.id === id);
-          if (code) {
-            setCodeName(code.code);
-            setForm({
-              maxUses: code.maxUses,
-              isActive: code.isActive,
-            });
-          } else {
-            setError('Promo code not found');
-          }
-        })
-        .catch(err => {
-          setError(err instanceof Error ? err.message : 'Failed to fetch promo code');
-        })
-        .finally(() => {
-          setFetching(false);
+    if (!id) return;
+    adminApi
+      .getPromoCode(id)
+      .then((code) => {
+        setCodeName(code.code);
+        setForm({
+          maxUses: code.maxUses,
+          isActive: code.isActive,
         });
-    }
+      })
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : 'Failed to fetch promo code');
+      })
+      .finally(() => {
+        setFetching(false);
+      });
   }, [id]);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -55,39 +50,44 @@ export default function EditPromoCodePage() {
     setLoading(true);
     setError(null);
     try {
-      const data = {
+      await adminApi.updatePromoCode(id, {
         maxUses: Number(form.maxUses),
         isActive: form.isActive,
-      };
-      await adminApi.updatePromoCode(id, data);
+      });
+      toast.success('Promo code updated');
       router.push('/admin/promo-codes');
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to update promo code');
+      const msg = e instanceof Error ? e.message : 'Failed to update promo code';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
   }
 
   if (fetching) {
-    return <AdminLayout><div className="p-8 text-center text-muted-foreground">Loading...</div></AdminLayout>;
+    return <div className="text-center text-muted-foreground py-12">Loading…</div>;
   }
 
   return (
-    <AdminLayout>
-      <div className="flex items-center gap-4 mb-6">
-        <Link href="/admin/promo-codes" className="text-sm text-muted-foreground hover:underline">
-          &larr; Back
+    <div className="space-y-6">
+      <div className="flex items-center gap-4">
+        <Link
+          href="/admin/promo-codes"
+          className="text-sm text-muted-foreground hover:underline"
+        >
+          ← Back
         </Link>
-        <h1 className="text-2xl font-bold">Edit Promo Code</h1>
+        <h1 className="text-3xl font-extrabold tracking-tight">Edit Promo Code</h1>
       </div>
 
-      <Card className="max-w-xl">
+      <Card className="max-w-xl rounded-3xl border-2">
         <CardHeader>
-          <CardTitle>Code: {codeName}</CardTitle>
+          <CardTitle className="font-bold">Code: {codeName}</CardTitle>
         </CardHeader>
         <CardContent>
           {error && (
-            <div className="rounded-lg bg-destructive/10 text-destructive p-3 text-sm mb-4">
+            <div className="rounded-xl bg-destructive/10 text-destructive p-3 text-sm mb-4">
               {error}
             </div>
           )}
@@ -100,6 +100,7 @@ export default function EditPromoCodePage() {
                 type="number"
                 required
                 min={1}
+                className="rounded-xl"
                 value={form.maxUses}
                 onChange={(e) => setForm((f) => ({ ...f, maxUses: Number(e.target.value) }))}
               />
@@ -115,12 +116,12 @@ export default function EditPromoCodePage() {
               <Label htmlFor="isActive">Active</Label>
             </div>
 
-            <Button type="submit" disabled={loading} className="mt-4">
-              {loading ? 'Saving...' : 'Save Changes'}
+            <Button type="submit" disabled={loading} className="mt-4 rounded-2xl">
+              {loading ? 'Saving…' : 'Save Changes'}
             </Button>
           </form>
         </CardContent>
       </Card>
-    </AdminLayout>
+    </div>
   );
 }

@@ -29,6 +29,8 @@ export interface User {
   email: string | null;
   firstName: string | null;
   lastName: string | null;
+  companyName?: string | null;
+  phoneNumber?: string | null;
   provider?: string;
   photo?: { id: string; path: string } | null;
   role?: Role | null;
@@ -313,6 +315,12 @@ export interface EventAnalytics {
   topPromoCodes: TopPromoCode[];
 }
 
+export interface AdminDailyStat {
+  date: string;
+  bookings: number;
+  revenue: number;
+}
+
 export interface AdminStats {
   users: {
     admin: number;
@@ -337,6 +345,11 @@ export interface AdminStats {
   };
   totalGrossRevenue: number;
   totalRefunds: number;
+  netRevenue: number;
+  pendingOrganizers: number;
+  totalTicketsSold: number;
+  liveEvents: number;
+  dailyStats: AdminDailyStat[];
 }
 
 export type PromoDiscountType = 'percent' | 'fixed';

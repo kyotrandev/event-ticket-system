@@ -38,7 +38,7 @@ export default function LoginPage() {
       } else if (user.role?.id === RoleId.Organizer) {
         router.push('/organizer/events');
       } else if (user.role?.id === RoleId.Admin) {
-        router.push('/admin/users');
+        router.push('/admin/dashboard');
       } else if (user.role?.id === RoleId.Staff) {
         router.push('/staff/dashboard');
       } else {

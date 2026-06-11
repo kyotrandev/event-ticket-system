@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import { adminApi } from '@/lib/api';
-import { AdminLayout } from '@/components/admin-layout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import type { User } from '@/lib/types';
 import { StatusId, RoleId } from '@/lib/types';
 
@@ -36,6 +37,8 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true);
   const [actioning, setActioning] = useState<number | string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [roleFilter, setRoleFilter] = useState<string>('all');
 
   function load(p: number) {
     setLoading(true);
@@ -62,6 +65,17 @@ export default function AdminUsersPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return users.filter((u) => {
+      if (roleFilter !== 'all' && String(u.role?.id) !== roleFilter) return false;
+      if (!q) return true;
+      const name = `${u.firstName ?? ''} ${u.lastName ?? ''}`.toLowerCase();
+      const email = (u.email ?? '').toLowerCase();
+      return name.includes(q) || email.includes(q);
+    });
+  }, [users, search, roleFilter]);
+
   async function toggleLock(user: User) {
     const isLocked = user.status?.id === StatusId.Locked;
     setActioning(user.id);
@@ -71,61 +85,86 @@ export default function AdminUsersPage() {
         ? await adminApi.unlockUser(user.id)
         : await adminApi.lockUser(user.id);
       setUsers((prev) => prev.map((u) => (u.id === user.id ? updated : u)));
+      toast.success(isLocked ? 'User unlocked' : 'User locked');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Action failed');
+      const msg = e instanceof Error ? e.message : 'Action failed';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setActioning(null);
     }
   }
 
   return (
-    <AdminLayout>
-      <h1 className="text-2xl font-bold mb-6">Users</h1>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-extrabold tracking-tight">Users</h1>
+        <p className="text-muted-foreground mt-1">Manage accounts, roles, and access.</p>
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-3">
+        <Input
+          placeholder="Search by name or email…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="max-w-sm rounded-2xl"
+        />
+        <select
+          className="flex h-9 rounded-2xl border border-input bg-transparent px-3 py-1 text-sm shadow-sm max-w-[180px]"
+          value={roleFilter}
+          onChange={(e) => setRoleFilter(e.target.value)}
+        >
+          <option value="all">All roles</option>
+          <option value={String(RoleId.Customer)}>Customer</option>
+          <option value={String(RoleId.Organizer)}>Organizer</option>
+          <option value={String(RoleId.Staff)}>Staff</option>
+          <option value={String(RoleId.Admin)}>Admin</option>
+        </select>
+      </div>
 
       {error && (
-        <div className="rounded-lg bg-destructive/10 text-destructive p-3 text-sm mb-4">
-          {error}
-        </div>
+        <div className="rounded-2xl bg-destructive/10 text-destructive p-3 text-sm">{error}</div>
       )}
 
-      <div className="overflow-x-auto rounded-lg border">
+      <div className="overflow-x-auto rounded-2xl border-2">
         <table className="w-full text-sm">
-          <thead className="bg-muted text-muted-foreground">
+          <thead className="bg-muted/60 text-muted-foreground">
             <tr>
-              <th className="px-3 py-2 text-left">Name</th>
-              <th className="px-3 py-2 text-left">Email</th>
-              <th className="px-3 py-2 text-left">Role</th>
-              <th className="px-3 py-2 text-left">Status</th>
-              <th className="px-3 py-2 text-left">Joined</th>
-              <th className="px-3 py-2 text-left">Actions</th>
+              <th className="px-4 py-3 text-left font-semibold">Name</th>
+              <th className="px-4 py-3 text-left font-semibold">Email</th>
+              <th className="px-4 py-3 text-left font-semibold">Role</th>
+              <th className="px-4 py-3 text-left font-semibold">Status</th>
+              <th className="px-4 py-3 text-left font-semibold">Joined</th>
+              <th className="px-4 py-3 text-left font-semibold">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y">
-            {users.map((u) => {
+            {filtered.map((u) => {
               const statusId = u.status?.id ?? 0;
               const roleId = u.role?.id ?? 0;
               const isLocked = statusId === StatusId.Locked;
               const isAdmin = roleId === RoleId.Admin;
               return (
                 <tr key={u.id} className="hover:bg-muted/30">
-                  <td className="px-3 py-2 font-medium">
+                  <td className="px-4 py-3 font-medium">
                     {u.firstName ?? ''} {u.lastName ?? ''}
                   </td>
-                  <td className="px-3 py-2 text-muted-foreground">{u.email ?? '—'}</td>
-                  <td className="px-3 py-2">{ROLE_LABELS[roleId] ?? roleId}</td>
-                  <td className="px-3 py-2">
+                  <td className="px-4 py-3 text-muted-foreground">{u.email ?? '—'}</td>
+                  <td className="px-4 py-3">{ROLE_LABELS[roleId] ?? roleId}</td>
+                  <td className="px-4 py-3">
                     <Badge variant={statusVariant(statusId)}>
                       {STATUS_LABELS[statusId] ?? statusId}
                     </Badge>
                   </td>
-                  <td className="px-3 py-2 whitespace-nowrap text-muted-foreground">
+                  <td className="px-4 py-3 whitespace-nowrap text-muted-foreground">
                     {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '—'}
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="px-4 py-3">
                     {!isAdmin && (
                       <Button
                         variant={isLocked ? 'outline' : 'destructive'}
                         size="sm"
+                        className="rounded-xl"
                         disabled={actioning === u.id}
                         onClick={() => void toggleLock(u)}
                       >
@@ -140,13 +179,17 @@ export default function AdminUsersPage() {
         </table>
       </div>
 
-      {loading && <p className="text-muted-foreground mt-4 text-sm">Loading…</p>}
+      {filtered.length === 0 && !loading && (
+        <p className="text-muted-foreground text-sm">No users match your filters.</p>
+      )}
+
+      {loading && <p className="text-muted-foreground text-sm">Loading…</p>}
 
       {hasMore && !loading && (
-        <Button variant="outline" className="mt-4" onClick={() => load(page + 1)}>
+        <Button variant="outline" className="rounded-2xl" onClick={() => load(page + 1)}>
           Load more
         </Button>
       )}
-    </AdminLayout>
+    </div>
   );
 }

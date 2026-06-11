@@ -343,6 +343,8 @@ export const adminApi = {
       limit,
     }),
 
+  getPromoCode: (id: string) => api.get<PromoCode>(`/promo-codes/${id}`),
+
   createPromoCode: (dto: {
     code: string;
     discountType: string;

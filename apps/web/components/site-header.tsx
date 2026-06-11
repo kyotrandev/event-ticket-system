@@ -46,7 +46,7 @@ export function SiteHeader() {
           )}
           {isRole(RoleId.Admin) && (
             <Link
-              href="/admin/users"
+              href="/admin/dashboard"
               className={buttonVariants({ variant: 'ghost', size: 'lg', className: 'font-bold rounded-2xl text-base hidden md:inline-flex' })}
             >
               Admin
