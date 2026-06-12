@@ -519,7 +519,10 @@ export class BookingsService {
       action: 'booking.cancelled',
       entity: 'Booking',
       entityId: bookingId,
-      payload: { reason: 'user_cancelled_pending', totalAmount: booking.totalAmount },
+      payload: {
+        reason: 'user_cancelled_pending',
+        totalAmount: booking.totalAmount,
+      },
     });
     await Promise.allSettled(
       items.map((item) =>
@@ -671,7 +674,11 @@ export class BookingsService {
       keyword?: string;
       organizerId?: string;
     },
-  ): Promise<InfinityPaginationResponseDto<import('./dto/admin-booking-summary.dto').AdminBookingSummaryDto>> {
+  ): Promise<
+    InfinityPaginationResponseDto<
+      import('./dto/admin-booking-summary.dto').AdminBookingSummaryDto
+    >
+  > {
     const cappedLimit = Math.min(limit, 50);
     const qb = this.dataSource
       .getRepository(BookingEntity)
@@ -725,7 +732,9 @@ export class BookingsService {
           .map(String),
       ),
     ];
-    const allUserIds = [...new Set([...customerIds, ...organizerIds.map(Number)])];
+    const allUserIds = [
+      ...new Set([...customerIds, ...organizerIds.map(Number)]),
+    ];
     const users = allUserIds.length
       ? await this.dataSource.getRepository(UserEntity).find({
           where: { id: In(allUserIds) },
@@ -814,12 +823,10 @@ export class BookingsService {
   }
 
   async findByIdOrFail(id: string): Promise<Booking> {
-    const entity = await this.dataSource
-      .getRepository(BookingEntity)
-      .findOne({
-        where: { id },
-        relations: ['items', 'items.ticketType', 'items.ticketType.event'],
-      });
+    const entity = await this.dataSource.getRepository(BookingEntity).findOne({
+      where: { id },
+      relations: ['items', 'items.ticketType', 'items.ticketType.event'],
+    });
     if (!entity) {
       throw new NotFoundException('Booking not found');
     }
@@ -937,4 +944,3 @@ export class BookingsService {
     }
   }
 }
-

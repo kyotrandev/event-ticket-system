@@ -290,6 +290,19 @@ export interface EventStaffAssignment {
   statusId?: number | null;
 }
 
+export interface StaffEventSummary {
+  id: string;
+  name: string;
+  location: string;
+  startTime: string;
+  endTime: string;
+  bannerImage: string | null;
+}
+
+export interface StaffAssignmentWithEvent extends EventStaffAssignment {
+  event: StaffEventSummary | null;
+}
+
 export type CheckInStatus = 'VALID' | 'ALREADY_USED' | 'INVALID' | 'NOT_FOUND';
 
 export interface CheckInResult {

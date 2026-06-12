@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import jsQR from 'jsqr';
 import { checkInApi } from '@/lib/api';
+import { useDeferredEffect } from '@/lib/use-deferred-effect';
 import { useAuth } from '@/lib/auth-context';
 import { RoleId } from '@/lib/types';
 import type { CheckInResult } from '@/lib/types';
@@ -181,9 +182,8 @@ export default function CheckInPage() {
     }
   }, [scanLoop]);
 
-  useEffect(() => {
+  useDeferredEffect(() => {
     if (mode === 'qr') {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       void startCamera();
     } else {
       stopCamera();

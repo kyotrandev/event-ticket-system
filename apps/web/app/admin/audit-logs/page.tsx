@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
+import { useDeferredEffect } from '@/lib/use-deferred-effect';
 import { ScrollText } from 'lucide-react';
 import { adminApi } from '@/lib/api';
 import type { AuditLogEntry } from '@/lib/types';
@@ -28,7 +29,7 @@ export default function AdminAuditLogsPage() {
     }
   }, [page]);
 
-  useEffect(() => {
+  useDeferredEffect(() => {
     void load();
   }, [load]);
 

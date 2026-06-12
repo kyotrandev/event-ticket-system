@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { RefreshCw, ScanLine } from 'lucide-react';
 import { checkInApi } from '@/lib/api';
 import type { CheckInLogEntry } from '@/lib/types';
@@ -22,7 +22,7 @@ export function CheckinLivePanel({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const data = await checkInApi.getLogs(eventId);
@@ -33,13 +33,13 @@ export function CheckinLivePanel({
     } finally {
       setLoading(false);
     }
-  }
+  }, [eventId]);
 
   useEffect(() => {
     void load();
     const interval = setInterval(() => void load(), 15000);
     return () => clearInterval(interval);
-  }, [eventId]);
+  }, [load]);
 
   return (
     <div className="space-y-4">

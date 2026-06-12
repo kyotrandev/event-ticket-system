@@ -10,9 +10,9 @@ import { RoleId } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Ticket } from 'lucide-react';
+import { Building2 } from 'lucide-react';
 
-export default function RegisterPage() {
+export default function OrganizerRegisterPage() {
   const { register } = useAuth();
   const router = useRouter();
   const [form, setForm] = useState({
@@ -20,6 +20,8 @@ export default function RegisterPage() {
     lastName: '',
     email: '',
     password: '',
+    companyName: '',
+    phoneNumber: '',
   });
   const [submitting, setSubmitting] = useState(false);
 
@@ -37,11 +39,13 @@ export default function RegisterPage() {
         lastName: form.lastName,
         email: form.email,
         password: form.password,
-        role: RoleId.Customer,
+        companyName: form.companyName,
+        phoneNumber: form.phoneNumber,
+        role: RoleId.Organizer,
       });
 
       toast.success(
-        'Account created! Please check your email and click the verification link to activate your account.',
+        'Application submitted! Please check your email to verify your address. After verification, your account will be reviewed by our team.',
         { duration: 8000 },
       );
       router.push('/login');
@@ -61,15 +65,15 @@ export default function RegisterPage() {
         <div className="mx-auto w-full max-w-sm space-y-8">
           <div className="flex items-center gap-2">
              <div className="flex size-8 items-center justify-center rounded-lg bg-primary">
-                <Ticket className="size-5 text-primary-foreground" />
+                <Building2 className="size-5 text-primary-foreground" />
              </div>
-             <span className="text-xl font-bold tracking-tight">EventTicket</span>
+             <span className="text-xl font-bold tracking-tight">EventTicket For Organizers</span>
           </div>
 
           <div className="space-y-2">
-            <h1 className="text-3xl font-semibold tracking-tight">Create an account</h1>
+            <h1 className="text-3xl font-semibold tracking-tight">Apply as an Organizer</h1>
             <p className="text-muted-foreground text-sm">
-              Discover and book tickets for the best events.
+              Create an account to host events, manage attendees, and track your revenue.
             </p>
           </div>
 
@@ -98,7 +102,7 @@ export default function RegisterPage() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">Email address</Label>
+                <Label htmlFor="email">Work email address</Label>
                 <Input
                   id="email"
                   type="email"
@@ -107,7 +111,7 @@ export default function RegisterPage() {
                   value={form.email}
                   onChange={update('email')}
                   className="h-11"
-                  placeholder="name@example.com"
+                  placeholder="name@company.com"
                 />
               </div>
               <div className="space-y-2">
@@ -121,37 +125,41 @@ export default function RegisterPage() {
                   onChange={update('password')}
                   className="h-11"
                 />
-                <p className="text-xs text-muted-foreground">Must be at least 8 characters</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 pt-2">
+                 <div className="space-y-2">
+                    <Label htmlFor="companyName">Company name</Label>
+                    <Input
+                       id="companyName"
+                       required
+                       value={form.companyName}
+                       onChange={update('companyName')}
+                       className="h-11"
+                    />
+                 </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="phoneNumber">Phone number</Label>
+                    <Input
+                       id="phoneNumber"
+                       required
+                       value={form.phoneNumber}
+                       onChange={update('phoneNumber')}
+                       className="h-11"
+                    />
+                 </div>
               </div>
             </div>
 
             <Button type="submit" className="h-11 w-full" disabled={submitting}>
-              {submitting ? 'Creating account…' : 'Sign up'}
+              {submitting ? 'Submitting application…' : 'Submit application'}
             </Button>
           </form>
 
           <p className="text-center text-sm text-muted-foreground">
-            Already have an account?{' '}
-            <Link href="/login" className="font-medium text-primary hover:underline">
-              Log in
-            </Link>
-          </p>
-
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
-                For organizers
-              </span>
-            </div>
-          </div>
-          
-          <p className="text-center text-sm text-muted-foreground">
-            Want to sell tickets to your own events?{' '}
-            <Link href="/register/organizer" className="font-medium text-primary hover:underline">
-              Apply here
+            Looking to buy tickets instead?{' '}
+            <Link href="/register" className="font-medium text-primary hover:underline">
+              Create a customer account
             </Link>
           </p>
         </div>
@@ -160,18 +168,18 @@ export default function RegisterPage() {
       {/* Right side: Image/Pattern */}
       <div className="hidden bg-zinc-950 lg:block relative overflow-hidden">
         <img 
-          src="https://images.unsplash.com/photo-1459749411175-04bf5292ceea?auto=format&fit=crop&q=80&w=2000" 
-          alt="Concert stage" 
-          className="absolute inset-0 h-full w-full object-cover opacity-60"
+          src="https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&q=80&w=2000" 
+          alt="Event backstage" 
+          className="absolute inset-0 h-full w-full object-cover opacity-50"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 to-transparent" />
         <div className="absolute bottom-12 left-12 right-12 text-zinc-50">
           <blockquote className="space-y-4">
             <p className="text-2xl font-medium leading-relaxed">
-              &ldquo;I found my favorite underground artists through EventTicket. The booking process is seamless and the app is beautiful.&rdquo;
+              &ldquo;The tools EventTicket provides organizers are simply unmatched. We grew our ticket sales by 40% in the first quarter of using the platform.&rdquo;
             </p>
             <footer className="text-sm text-zinc-400">
-              Alex Chen, Customer
+              Michael Chang, Festival Director
             </footer>
           </blockquote>
         </div>

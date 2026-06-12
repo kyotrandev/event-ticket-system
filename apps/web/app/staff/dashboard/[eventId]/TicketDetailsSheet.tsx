@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { staffApi } from '@/lib/api';
+import type { TicketDetails } from '@/lib/types';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -13,7 +14,7 @@ interface TicketDetailsSheetProps {
 }
 
 export function TicketDetailsSheet({ ticketId, onClose, onStatusChange }: TicketDetailsSheetProps) {
-  const [details, setDetails] = useState<any>(null);
+  const [details, setDetails] = useState<TicketDetails | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -161,7 +162,8 @@ export function TicketDetailsSheet({ ticketId, onClose, onStatusChange }: Ticket
                 <Select 
                   value={details.status.toUpperCase()} 
                   onValueChange={(val) => {
-                    setDetails({ ...details, status: val.toLowerCase() });
+                    if (!val) return;
+                    setDetails({ ...details, status: val.toLowerCase() as any });
                     onStatusChange(details.id, val.toLowerCase());
                   }}
                 >
@@ -175,7 +177,11 @@ export function TicketDetailsSheet({ ticketId, onClose, onStatusChange }: Ticket
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground leading-relaxed px-1 mt-3">
-                  Changing a status to <span className="font-medium text-foreground">"Reset to Not Scanned"</span> will clear its current validation and allow the ticket to be scanned again at the gate.
+                  Changing a status to{' '}
+                  <span className="font-medium text-foreground">
+                    &ldquo;Reset to Not Scanned&rdquo;
+                  </span>{' '}
+                  will clear its current validation and allow the ticket to be scanned again at the gate.
                 </p>
               </div>
             </section>

@@ -1,6 +1,13 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsEnum, IsNumber, IsOptional, IsString, IsUUID, Min } from 'class-validator';
+import {
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Min,
+} from 'class-validator';
 import { TicketStatusEnum } from '../ticket-status.enum';
 
 export class QueryOrganizerTicketsDto {
@@ -28,7 +35,9 @@ export class QueryOrganizerTicketsDto {
   @IsOptional()
   status?: TicketStatusEnum;
 
-  @ApiPropertyOptional({ description: 'Search by customer name, email, or ticket code' })
+  @ApiPropertyOptional({
+    description: 'Search by customer name, email, or ticket code',
+  })
   @IsString()
   @IsOptional()
   keyword?: string;

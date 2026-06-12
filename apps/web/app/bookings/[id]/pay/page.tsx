@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { use, useCallback, useRef, useState, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
 import { loadStripe } from '@stripe/stripe-js';
 import {
@@ -11,6 +11,7 @@ import {
 } from '@stripe/react-stripe-js';
 import { toast } from 'sonner';
 import { ApiError, bookingApi, paymentApi } from '@/lib/api';
+import { useDeferredEffect } from '@/lib/use-deferred-effect';
 import type { Booking, CreateIntentResponse } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import {
@@ -140,8 +141,7 @@ export default function PayPage({
     }
   }, [id, router]);
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+  useDeferredEffect(() => {
     void load();
   }, [load]);
 

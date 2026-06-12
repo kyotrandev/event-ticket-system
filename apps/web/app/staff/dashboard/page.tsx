@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { staffApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
-import { RoleId } from '@/lib/types';
+import { RoleId, type StaffAssignmentWithEvent } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { buttonVariants } from '@/components/ui/button';
 import { MapPin, CalendarDays, ScanLine } from 'lucide-react';
@@ -13,7 +13,7 @@ import { MapPin, CalendarDays, ScanLine } from 'lucide-react';
 export default function StaffDashboardPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  const [assignments, setAssignments] = useState<any[]>([]);
+  const [assignments, setAssignments] = useState<StaffAssignmentWithEvent[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

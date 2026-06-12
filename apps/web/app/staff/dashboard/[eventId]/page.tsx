@@ -5,8 +5,9 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { api, staffApi, checkInApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
+import type { EventAttendee, EventModel } from '@/lib/types';
 import { RoleId } from '@/lib/types';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -23,14 +24,18 @@ export default function StaffEventDetailsPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   
-  const [event, setEvent] = useState<any>(null);
-  const [attendees, setAttendees] = useState<any[]>([]);
+  const [event, setEvent] = useState<EventModel | null>(null);
+  const [attendees, setAttendees] = useState<EventAttendee[]>([]);
   const [loading, setLoading] = useState(true);
   
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   
-  const [pendingStatusChange, setPendingStatusChange] = useState<{ ticketId: string, newStatus: string, att: any } | null>(null);
+  const [pendingStatusChange, setPendingStatusChange] = useState<{
+    ticketId: string;
+    newStatus: string;
+    att: EventAttendee;
+  } | null>(null);
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -41,7 +46,7 @@ export default function StaffEventDetailsPage() {
     }
 
     Promise.all([
-      api.get<any>(`/events/${eventId}`),
+      api.get<EventModel>(`/events/${eventId}`),
       staffApi.getAttendees(eventId),
     ])
       .then(([ev, atts]) => {
@@ -63,15 +68,15 @@ export default function StaffEventDetailsPage() {
         toast.success(`Check-in successful: ${result.attendeeName}`);
         // Optimistically update the local state
         setAttendees(prev => prev.map(a => 
-          a.code === code ? { ...a, status: 'USED' } : a
+          a.code === code ? { ...a, status: 'used' } : a
         ));
       } else if (result.status === 'ALREADY_USED') {
         toast.error(`Ticket already used at ${new Date(result.originalScannedAt!).toLocaleTimeString()} by ${result.staffName}`);
       } else {
         toast.error('Invalid ticket code');
       }
-    } catch (err: any) {
-      toast.error(err.message || 'Check-in failed');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Check-in failed');
     }
   };
 
@@ -80,10 +85,12 @@ export default function StaffEventDetailsPage() {
       await staffApi.updateTicketStatus(ticketId, newStatus);
       toast.success('Ticket status updated successfully');
       setAttendees(prev => prev.map(a => 
-        a.id === ticketId ? { ...a, status: newStatus } : a
+        a.id === ticketId ? { ...a, status: newStatus as any } : a
       ));
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to update ticket status');
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to update ticket status',
+      );
     }
   };
 
@@ -255,7 +262,7 @@ export default function StaffEventDetailsPage() {
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       <Select 
                         value={att.status?.toUpperCase()} 
-                        onValueChange={(newStatus) => setPendingStatusChange({ ticketId: att.id, newStatus, att })}
+                        onValueChange={(newStatus) => setPendingStatusChange({ ticketId: att.id, newStatus: newStatus as string, att })}
                       >
                         <SelectTrigger className="w-[120px] h-8 text-xs border-0 bg-transparent hover:bg-muted/50 focus:ring-0 [&>svg]:opacity-50">
                           <SelectValue>
@@ -344,7 +351,7 @@ export default function StaffEventDetailsPage() {
         onClose={() => setSelectedTicketId(null)}
         onStatusChange={(ticketId, newStatus) => {
           setAttendees(prev => prev.map(a => 
-            a.id === ticketId ? { ...a, status: newStatus } : a
+            a.id === ticketId ? { ...a, status: newStatus as any } : a
           ));
         }}
       />

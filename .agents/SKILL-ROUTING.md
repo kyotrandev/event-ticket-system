@@ -15,7 +15,8 @@ Thực hiện theo thứ tự, trước khi sửa file:
 | 3 | `docs/ARCHITECTURE.md` | Chạm nhiều module, transaction, queue |
 | 4 | `.serena/memories/conventions.md` | Nhắc: tiếng Việt, ownership ở service, idempotency |
 | 5 | `git status` + diff | Biết phạm vi thay đổi hiện tại, tránh trùng/lệch |
-| 6 | **Đọc skill** (Read tool) | Chỉ sau khi đã xác định loại task ở mục 2 |
+| 6 | **CodeGraph** (`.codegraph/`) | Explore/debug/impact — ưu tiên `codegraph explore` (MCP) hoặc CLI trước grep/read |
+| 7 | **Đọc skill** (Read tool) | Chỉ sau khi đã xác định loại task ở mục 2 |
 
 **Quy tắc vàng:** Skill local (`.agents/skills/`) **ưu tiên hơn** skill global khi cùng domain (Stripe, design).
 
@@ -73,7 +74,7 @@ User request
     │     → Google Stitch → stitch-design-taste → DESIGN.md
     │
     ├─ Bug / regression?
-    │     → orch-fix-defect hoặc gitnexus-debugging
+    │     → CodeGraph (`codegraph explore` / `codegraph impact`) → orch-fix-defect
     │     → User yêu cầu review diff → review-bugbot / review-security skills
     │
     ├─ Feature lớn nhiều bước (module mới end-to-end)?
@@ -130,7 +131,7 @@ User request
 | Auth, JWT, RBAC | `security-review` |
 | Payment endpoint | `security-review` + `stripe-best-practices` |
 | E2E / verify trước ship | `verification-loop`, `e2e-testing` |
-| Explore codebase | `gitnexus-exploring` hoặc Task explore |
+| Explore codebase | **CodeGraph** (`codegraph explore`, `codegraph query`, `codegraph map`) — ưu tiên trước grep |
 | Stripe trong `.agents/skills/stripe-best-practices/references/` | Đọc file reference tương ứng trước khi code |
 
 ---
@@ -215,6 +216,22 @@ User request
 | Trang browse events đẹp hơn | redesign-existing-projects → design_SKILL.md (Lingo) |
 | Fix Stripe webhook | stripe-best-practices (security.md) → AGENTS raw body |
 | Thêm entity `PromoCode` field | generate skill → database-migrations |
+
+---
+
+## 10. CodeGraph (local code intelligence)
+
+Index nằm tại `.codegraph/` (đã gitignore). Sau thay đổi code lớn: `codegraph sync`.
+
+| Mục đích | Lệnh / tool |
+|----------|-------------|
+| Trả lời "X hoạt động thế nào?" | MCP `codegraph_explore` hoặc `codegraph explore "..."` |
+| Tìm symbol + callers/callees | `codegraph query <tên>` |
+| Impact trước khi sửa | `codegraph impact <symbol>` |
+| File kết nối nhiều nhất | `codegraph map` |
+| Kiểm tra index | `codegraph status` |
+
+**Quy tắc agent:** Khi explore/debug codebase, **ưu tiên CodeGraph** trước grep/read hàng loạt. Không dùng GitNexus.
 
 ---
 

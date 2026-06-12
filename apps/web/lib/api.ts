@@ -212,6 +212,9 @@ import type {
   CreateIntentResponse,
   Ticket,
   EventStaffAssignment,
+  EventAttendee,
+  StaffAssignmentWithEvent,
+  TicketDetails,
   CheckInResult,
   CheckInLogEntry,
   WaitlistEntry,
@@ -292,9 +295,12 @@ export const staffApi = {
   remove: (eventId: string, staffId: string) =>
     api.delete<void>(`/events/${eventId}/staff/${staffId}`),
 
-  getMyAssignments: () => api.get<any[]>('/events/staff/assignments'),
-  getAttendees: (eventId: string) => api.get<any[]>(`/tickets/events/${eventId}/attendees`),
-  getTicketDetails: (ticketId: string) => api.get<any>(`/tickets/${ticketId}/details`),
+  getMyAssignments: () =>
+    api.get<StaffAssignmentWithEvent[]>('/events/staff/assignments'),
+  getAttendees: (eventId: string) =>
+    api.get<EventAttendee[]>(`/tickets/events/${eventId}/attendees`),
+  getTicketDetails: (ticketId: string) =>
+    api.get<TicketDetails>(`/tickets/${ticketId}/details`),
   updateTicketStatus: (ticketId: string, status: string) => 
     api.patch(`/tickets/${ticketId}/status`, { status }),
 };

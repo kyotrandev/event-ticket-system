@@ -13,7 +13,7 @@ import {
   Ticket as TicketIcon,
   User,
 } from 'lucide-react';
-import { organizerApi, ticketApi } from '@/lib/api';
+import { ticketApi } from '@/lib/api';
 import type { TicketDetails } from '@/lib/types';
 import { fmtDateTime } from '@/lib/booking-utils';
 import { Badge } from '@/components/ui/badge';

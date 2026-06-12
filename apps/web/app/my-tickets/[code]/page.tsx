@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Calendar, MapPin, Clock, Ticket as TicketIcon } from 'lucide-react';
 
-import { api, ticketApi, bookingApi } from '@/lib/api';
+import { ticketApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import type { Ticket, EventModel, BookingItem } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
@@ -86,7 +86,7 @@ export default function TicketDetailPage() {
             setEvent(foundTicket.bookingItem.ticketType.event);
           }
         }
-      } catch (err) {
+      } catch {
         setError('Failed to load ticket details.');
       } finally {
         setLoading(false);

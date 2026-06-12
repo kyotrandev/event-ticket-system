@@ -5,10 +5,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import {
   ArrowLeft,
-  Calendar,
-  Clock,
   Mail,
-  MapPin,
   Phone,
   Ticket as TicketIcon,
   User,
@@ -108,9 +105,6 @@ export default function AdminTicketDetailPage() {
     );
   }
 
-  const startDate = ticket.event?.startTime
-    ? new Date(ticket.event.startTime)
-    : null;
   const customerName = ticket.customer
     ? `${ticket.customer.firstName ?? ''} ${ticket.customer.lastName ?? ''}`.trim() ||
       ticket.customer.email

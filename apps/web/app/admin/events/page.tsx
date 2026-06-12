@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
+import { useDeferredEffect } from '@/lib/use-deferred-effect';
 import Link from 'next/link';
 import { CalendarDays, Search } from 'lucide-react';
 import { adminApi } from '@/lib/api';
@@ -43,7 +44,7 @@ export default function AdminEventsPage() {
     }
   }, [page, search, status]);
 
-  useEffect(() => {
+  useDeferredEffect(() => {
     void load();
   }, [load]);
 

@@ -43,13 +43,16 @@ export class EventsRelationalRepository implements EventRepository {
       status: undefined,
     };
 
-    const statuses = options.status 
-      ? [options.status as EventStatusEnum] 
+    const statuses = options.status
+      ? [options.status as EventStatusEnum]
       : [EventStatusEnum.PUBLISHED, EventStatusEnum.ONGOING];
 
     statuses.forEach((status) => {
-      const statusWhere: FindOptionsWhere<EventEntity> = { ...baseWhere, status };
-      
+      const statusWhere: FindOptionsWhere<EventEntity> = {
+        ...baseWhere,
+        status,
+      };
+
       if (options.category) {
         statusWhere.category = ILike(`%${options.category}%`) as any;
       }
@@ -57,12 +60,14 @@ export class EventsRelationalRepository implements EventRepository {
         statusWhere.location = ILike(`%${options.location}%`) as any;
       }
       if (options.dateFrom) {
-        statusWhere.startTime = MoreThanOrEqual(new Date(options.dateFrom)) as any;
+        statusWhere.startTime = MoreThanOrEqual(
+          new Date(options.dateFrom),
+        ) as any;
       }
       if (options.dateTo) {
         statusWhere.endTime = LessThanOrEqual(new Date(options.dateTo)) as any;
       }
-      
+
       where.push(statusWhere);
     });
 

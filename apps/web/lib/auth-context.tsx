@@ -26,6 +26,8 @@ interface AuthState {
     firstName: string;
     lastName: string;
     role?: number;
+    companyName?: string;
+    phoneNumber?: string;
   }) => Promise<void>;
   logout: () => Promise<void>;
   isRole: (role: RoleId) => boolean;
@@ -95,6 +97,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       firstName: string;
       lastName: string;
       role?: number;
+      companyName?: string;
+      phoneNumber?: string;
     }) => {
       await authApi.register(data);
     },

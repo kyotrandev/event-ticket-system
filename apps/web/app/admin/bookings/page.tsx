@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
+import { useDeferredEffect } from '@/lib/use-deferred-effect';
 import { Receipt, Search } from 'lucide-react';
 import { adminApi } from '@/lib/api';
 import type { AdminBookingSummary, BookingStatus } from '@/lib/types';
@@ -54,7 +55,7 @@ export default function AdminBookingsPage() {
     }
   }, [page, status, search]);
 
-  useEffect(() => {
+  useDeferredEffect(() => {
     void load();
   }, [load]);
 
