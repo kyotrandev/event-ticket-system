@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Cancelled</title>
+</head>
+<body style="font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0;">
+    <table width="100%" bgcolor="#f4f4f4" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+            <td>
+                <table align="center" bgcolor="#ffffff" style="max-width: 600px; width: 100%; margin: 20px auto; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" cellpadding="20" cellspacing="0" border="0">
+                    <tr>
+                        <td style="text-align: center; border-bottom: 1px solid #eeeeee;">
+                            <h2 style="color: #333333; margin: 0;">Event Cancelled</h2>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="color: #555555; line-height: 1.6;">
+                            <p>Hello {{name}},</p>
+                            <p>We are writing to inform you that the event <strong>{{eventName}}</strong> has been unexpectedly cancelled by the organizer.</p>
+                            <p>We apologize for any inconvenience this may cause. Your booking (ID: <code>{{bookingId}}</code>) has been cancelled.</p>
+                            <p>A full refund of <strong>{{refundAmount}}</strong> is being processed to your original payment method. Please allow a few business days for the funds to appear in your account.</p>
+                            <p>If you have any questions, please reply to this email.</p>
+                            <br>
+                            <p>Thank you,<br>EventTicket Team</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

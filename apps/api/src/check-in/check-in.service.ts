@@ -14,6 +14,7 @@ import { UserEntity } from '../users/infrastructure/persistence/relational/entit
 import { EventEntity } from '../events/infrastructure/persistence/relational/entities/event.entity';
 import { CheckInMethodEnum } from './check-in-method.enum';
 import { CheckInResultDto } from './dto/check-in-result.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class CheckInService {
@@ -22,6 +23,7 @@ export class CheckInService {
     private readonly logRepo: CheckInLogRelationalRepository,
     private readonly staffService: EventStaffAssignmentsService,
     private readonly ticketsService: TicketsService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   private async resolveUserName(userId: string): Promise<string> {
@@ -70,6 +72,18 @@ export class CheckInService {
           staffId,
           method,
         });
+
+        this.notificationsService.emitToEvent(
+          ticket.eventId,
+          'CHECKIN_UPDATE',
+          {
+            ticketCode: ticket.code,
+            attendeeName,
+            ticketTypeName,
+            scannedAt: new Date(),
+          },
+        );
+
         return {
           status: 'VALID',
           attendeeName,

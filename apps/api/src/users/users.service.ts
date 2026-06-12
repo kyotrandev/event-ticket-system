@@ -26,6 +26,7 @@ import { Status } from '../statuses/domain/status';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserEntity } from './infrastructure/persistence/relational/entities/user.entity';
 import { UserMapper } from './infrastructure/persistence/relational/mappers/user.mapper';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class UsersService {
@@ -34,6 +35,7 @@ export class UsersService {
     private readonly filesService: FilesService,
     private readonly sessionService: SessionService,
     private readonly mailService: MailService,
+    private readonly notificationsService: NotificationsService,
     @InjectDataSource() private readonly dataSource: DataSource,
   ) {}
 
@@ -333,6 +335,15 @@ export class UsersService {
       console.error('Failed to send organizer approval email', error);
     }
 
+    await this.notificationsService.create({
+      userId: id as string,
+      title: 'Account Approved',
+      content:
+        'Your organizer account has been approved by the admin. You can now start creating events.',
+      type: 'ORGANIZER_APPROVED',
+      relatedEntityId: id as string,
+    });
+
     return updated!;
   }
 
@@ -365,6 +376,15 @@ export class UsersService {
     } catch (error) {
       console.error('Failed to send organizer rejection email', error);
     }
+
+    await this.notificationsService.create({
+      userId: id as string,
+      title: 'Account Rejected',
+      content:
+        'Your organizer account has been rejected. Please contact support for more details.',
+      type: 'ORGANIZER_REJECTED',
+      relatedEntityId: id as string,
+    });
 
     return updated!;
   }

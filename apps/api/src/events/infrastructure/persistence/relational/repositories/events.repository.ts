@@ -55,7 +55,10 @@ export class EventsRelationalRepository implements EventRepository {
       };
 
       if (options.category) {
-        const categories = options.category.split(',').map((c) => c.trim()).filter(Boolean);
+        const categories = options.category
+          .split(',')
+          .map((c) => c.trim())
+          .filter(Boolean);
         if (categories.length > 0) {
           statusWhere.category = In(categories) as any;
         }
@@ -89,7 +92,10 @@ export class EventsRelationalRepository implements EventRepository {
         });
 
       if (options.category) {
-        const categories = options.category.split(',').map((c) => c.trim()).filter(Boolean);
+        const categories = options.category
+          .split(',')
+          .map((c) => c.trim())
+          .filter(Boolean);
         if (categories.length > 0) {
           qb.andWhere('event.category IN (:...categories)', {
             categories,

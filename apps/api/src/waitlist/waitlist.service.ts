@@ -20,6 +20,7 @@ import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { JoinWaitlistDto } from './dto/join-waitlist.dto';
 import { ConfigService } from '@nestjs/config';
 import { AllConfigType } from '../config/config.type';
+import { NotificationsService } from '../notifications/notifications.service';
 
 export const WAITLIST_EXPIRY_QUEUE = 'waitlist-expiry';
 export const WAITLIST_NOTIFY_HOURS = 48;
@@ -33,6 +34,7 @@ export class WaitlistService {
     private readonly mailService: MailService,
     private readonly auditLogsService: AuditLogsService,
     private readonly configService: ConfigService<AllConfigType>,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async join(userId: string, dto: JoinWaitlistDto): Promise<WaitlistEntry> {
@@ -144,6 +146,14 @@ export class WaitlistService {
           },
         });
       }
+
+      await this.notificationsService.create({
+        userId: String(userMap.get(entry.userId)?.id),
+        title: 'Waitlist Ticket Available!',
+        content: `A ${ticketType?.name ?? 'ticket'} is now available for you to book. You have ${WAITLIST_NOTIFY_HOURS} hours to complete your booking.`,
+        type: 'WAITLIST_AVAILABLE',
+        relatedEntityId: entry.eventId,
+      });
     }
   }
 

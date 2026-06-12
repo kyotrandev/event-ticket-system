@@ -9,6 +9,7 @@ import {
   MapPin,
   Receipt,
   Ticket,
+  AlertTriangle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { bookingApi, ticketApi } from '@/lib/api';
@@ -183,6 +184,18 @@ export default function BookingDetailPage({
           </div>
         </div>
       </div>
+
+      {event?.status === 'cancelled' && (
+        <div className="rounded-2xl bg-destructive/10 text-destructive p-5 border-2 border-destructive/20 flex gap-3 items-start">
+          <AlertTriangle className="size-5 shrink-0 mt-0.5" />
+          <div>
+            <h3 className="font-bold text-lg">Event Cancelled</h3>
+            <p className="text-sm mt-1 opacity-90">
+              The organizer has cancelled this event. Your booking is no longer valid. If you have already paid, a refund is being processed.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Status banner */}
       <Card className="border-2 rounded-2xl">

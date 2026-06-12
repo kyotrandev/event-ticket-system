@@ -6,6 +6,7 @@ import { Ticket } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { RoleId } from '@/lib/types';
 import { Button, buttonVariants } from '@/components/ui/button';
+import { NotificationBell } from './notifications/notification-bell';
 
 export function SiteHeader() {
   const { user, loading, logout, isRole } = useAuth();
@@ -82,6 +83,7 @@ export function SiteHeader() {
               <span className="text-muted-foreground hidden text-sm font-medium sm:inline px-2">
                 {user.firstName ?? user.email}
               </span>
+              <NotificationBell />
               <Button variant="outline" size="sm" onClick={handleLogout} className="font-bold rounded-2xl ml-2">
                 Log out
               </Button>

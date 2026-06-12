@@ -6,6 +6,7 @@ import { WaitlistExpiryProcessor } from './waitlist-expiry.processor';
 import { RelationalWaitlistPersistenceModule } from './infrastructure/persistence/relational/relational-persistence.module';
 import { MailModule } from '../mail/mail.module';
 import { AuditLogsModule } from '../audit-logs/audit-logs.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { AuditLogsModule } from '../audit-logs/audit-logs.module';
     BullModule.registerQueue({ name: WAITLIST_EXPIRY_QUEUE }),
     MailModule,
     AuditLogsModule,
+    NotificationsModule,
   ],
   controllers: [WaitlistController],
   providers: [WaitlistService, WaitlistExpiryProcessor],

@@ -68,9 +68,15 @@ import { EventStaffAssignmentsModule } from './event-staff-assignments/event-sta
 import { WaitlistModule } from './waitlist/waitlist.module';
 import { AdminModule } from './admin/admin.module';
 
+import { unnamedsModule } from './unnameds/unnameds.module';
+
+import { NotificationsModule } from './notifications/notifications.module';
+
 @Module({
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
   imports: [
+    NotificationsModule,
+    unnamedsModule,
     AdminModule,
     CheckInModule,
     EventStaffAssignmentsModule,

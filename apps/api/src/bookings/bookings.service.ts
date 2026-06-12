@@ -37,6 +37,7 @@ import { UserEntity } from '../users/infrastructure/persistence/relational/entit
 import { RoleEnum } from '../roles/roles.enum';
 import { OrganizerBookingSummaryDto } from './dto/organizer-booking-summary.dto';
 import { InfinityPaginationResponseDto } from '../utils/dto/infinity-pagination-response.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 
 export const BOOKING_EXPIRY_QUEUE = 'booking-expiry';
 export const BOOKING_HOLD_MINUTES = 15;
@@ -64,6 +65,7 @@ export class BookingsService {
     private readonly auditLogsService: AuditLogsService,
     private readonly mailService: MailService,
     private readonly waitlistService: WaitlistService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   private get stripe(): StripeClient {
@@ -909,7 +911,8 @@ export class BookingsService {
             payment &&
             payment.status === PaymentStatusEnum.SUCCEEDED &&
             payment.amount > 0 &&
-            !payment.stripePaymentIntentId.startsWith('free_')
+            !payment.stripePaymentIntentId.startsWith('free_') &&
+            !payment.stripePaymentIntentId.startsWith('pi_demo_')
           ) {
             const refund = await this.stripe.refunds.create(
               { payment_intent: payment.stripePaymentIntentId },
@@ -935,6 +938,16 @@ export class BookingsService {
 
         // Send email
         await this.sendCancellationEmail(bk.id, bk.customerId.toString());
+
+        // Send realtime notification
+        await this.notificationsService.create({
+          userId: bk.customerId.toString(),
+          title: 'Event Cancelled',
+          content:
+            'An event you booked has been unexpectedly cancelled. Your refund is being processed.',
+          type: 'EVENT_CANCELLED',
+          relatedEntityId: eventId,
+        });
       } catch (err) {
         this.logger.error(
           `Failed to cancel booking ${bk.id} during event cancellation`,

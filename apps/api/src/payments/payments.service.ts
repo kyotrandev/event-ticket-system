@@ -25,6 +25,7 @@ import { TicketTypeStatusEnum } from '../ticket-types/ticket-type-status.enum';
 import { TicketsService } from '../tickets/tickets.service';
 import { PromoCodesService } from '../promo-codes/promo-codes.service';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 export const TICKET_DELIVERY_QUEUE = 'ticket-delivery';
 
@@ -62,6 +63,7 @@ export class PaymentsService {
     private readonly ticketsService: TicketsService,
     private readonly promoCodesService: PromoCodesService,
     private readonly auditLogsService: AuditLogsService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   private get stripe(): StripeClient {
@@ -414,6 +416,15 @@ export class PaymentsService {
         },
         manager,
       );
+
+      // Notification for customer
+      await this.notificationsService.create({
+        userId: booking.customerId,
+        title: 'Payment Successful',
+        content: `Your payment of ${payment.amount} VND for booking ${booking.id} was successful.`,
+        type: 'PAYMENT_SUCCESS',
+        relatedEntityId: booking.id,
+      });
 
       return { paymentId: payment.id, fulfilled: true };
     });

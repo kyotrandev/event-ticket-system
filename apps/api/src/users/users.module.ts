@@ -13,6 +13,7 @@ import databaseConfig from '../database/config/database.config';
 import { FilesModule } from '../files/files.module';
 import { SessionModule } from '../session/session.module';
 import { MailModule } from '../mail/mail.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 // <database-block>
 const infrastructurePersistenceModule = (databaseConfig() as DatabaseConfig)
@@ -28,6 +29,7 @@ const infrastructurePersistenceModule = (databaseConfig() as DatabaseConfig)
     FilesModule,
     SessionModule,
     MailModule,
+    NotificationsModule,
   ],
   controllers: [UsersController],
   providers: [UsersService],

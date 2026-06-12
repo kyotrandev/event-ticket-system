@@ -14,6 +14,7 @@ import {
   Ticket,
   UserCog,
   Wallet,
+  XCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { organizerApi, staffApi, ticketTypeApi } from '@/lib/api';
@@ -91,6 +92,34 @@ export default function EventHubPage({
     }
   }
 
+  async function handleCancel() {
+    if (!window.confirm('Are you sure you want to cancel this event? This action cannot be undone and will notify all customers.')) return;
+    setPublishing(true);
+    try {
+      await organizerApi.updateEventStatus(id, 'cancelled');
+      toast.success('Event cancelled successfully!');
+      const [ev, an, types, staffList] = await Promise.all([
+        organizerApi.getEvent(id),
+        organizerApi.getAnalytics(id).catch(() => null),
+        ticketTypeApi.list(id).catch(() => []),
+        staffApi.list(id).catch(() => []),
+      ]);
+      setEvent({
+        ...ev,
+        ticketsSold: types.reduce((s, t) => s + t.soldQty, 0),
+        totalCapacity: types.reduce((s, t) => s + t.totalQty, 0),
+        revenue: an?.totalRevenue ?? 0,
+        checkInRate: an?.checkInRate ?? 0,
+        ticketTypeCount: types.length,
+        staffCount: staffList.length,
+      });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to cancel');
+    } finally {
+      setPublishing(false);
+    }
+  }
+
   if (loading) {
     return (
       <div className="space-y-4">
@@ -139,6 +168,17 @@ export default function EventHubPage({
             >
               <Rocket className="size-4 mr-2" />
               Publish
+            </Button>
+          )}
+          {(event.status === 'published' || event.status === 'ongoing') && (
+            <Button
+              variant="destructive"
+              className="rounded-2xl font-bold"
+              disabled={publishing}
+              onClick={() => void handleCancel()}
+            >
+              <XCircle className="size-4 mr-2" />
+              Cancel Event
             </Button>
           )}
           <Link

@@ -12,6 +12,7 @@ import { TicketsModule } from '../tickets/tickets.module';
 import { PromoCodesModule } from '../promo-codes/promo-codes.module';
 import { AuditLogsModule } from '../audit-logs/audit-logs.module';
 import { MailModule } from '../mail/mail.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { MailModule } from '../mail/mail.module';
     PromoCodesModule,
     AuditLogsModule,
     MailModule,
+    NotificationsModule,
   ],
   controllers: [PaymentsController],
   providers: [PaymentsService, TicketDeliveryProcessor],

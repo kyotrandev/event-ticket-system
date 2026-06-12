@@ -167,9 +167,7 @@ const SAMPLE_EVENTS: SeedEvent[] = [
     durationHours: 4,
     bannerUrl:
       'https://images.unsplash.com/photo-1511192336575-5a79af67a629?w=1200&q=80',
-    ticketTypes: [
-      { name: 'Entry + 1 Drink', price: 300000, totalQty: 100 },
-    ],
+    ticketTypes: [{ name: 'Entry + 1 Drink', price: 300000, totalQty: 100 }],
   },
   {
     name: 'Indie Game Developers Showcase',
@@ -201,7 +199,6 @@ export class EventSeedService {
   ) {}
 
   async run() {
-
     const organizer = await this.userRepository.findOne({
       where: { role: { id: RoleEnum.organizer } },
     });
@@ -210,7 +207,9 @@ export class EventSeedService {
     const now = Date.now();
 
     for (const sample of SAMPLE_EVENTS) {
-      const existing = await this.eventRepository.findOne({ where: { name: sample.name } });
+      const existing = await this.eventRepository.findOne({
+        where: { name: sample.name },
+      });
       if (existing) continue;
 
       const startTime = new Date(now + sample.startInDays * DAY);

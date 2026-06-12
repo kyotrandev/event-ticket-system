@@ -11,6 +11,7 @@ import { PromoCodesModule } from '../promo-codes/promo-codes.module';
 import { AuditLogsModule } from '../audit-logs/audit-logs.module';
 import { MailModule } from '../mail/mail.module';
 import { WaitlistModule } from '../waitlist/waitlist.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { WaitlistModule } from '../waitlist/waitlist.module';
     AuditLogsModule,
     MailModule,
     WaitlistModule,
+    NotificationsModule,
   ],
   controllers: [BookingsController],
   providers: [BookingsService, BookingExpiryProcessor],

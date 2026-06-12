@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Nunito, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
+import { NotificationProvider } from "@/components/providers/notification-provider";
 import { SiteHeader } from "@/components/site-header";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -33,9 +34,11 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col font-sans">
         <AuthProvider>
-          <SiteHeader />
-          <main className="flex-1">{children}</main>
-          <Toaster />
+          <NotificationProvider>
+            <SiteHeader />
+            <main className="flex-1">{children}</main>
+            <Toaster />
+          </NotificationProvider>
         </AuthProvider>
       </body>
     </html>
