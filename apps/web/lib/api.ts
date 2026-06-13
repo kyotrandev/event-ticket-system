@@ -185,6 +185,8 @@ export const fileApi = {
 export const authApi = {
   login: (email: string, password: string) =>
     api.post<LoginResponse>('/auth/email/login', { email, password }, false),
+  googleLogin: (idToken: string) =>
+    api.post<LoginResponse>('/auth/google/login', { idToken }, false),
   register: (data: {
     email: string;
     password: string;

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Limelight, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
+import { GoogleAuthProvider } from "@/components/google-oauth-provider";
 import { SiteHeader } from "@/components/site-header";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -32,11 +33,13 @@ export default function RootLayout({
       className={`${limelight.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans">
-        <AuthProvider>
-          <SiteHeader />
-          <main className="flex-1">{children}</main>
-          <Toaster />
-        </AuthProvider>
+        <GoogleAuthProvider>
+          <AuthProvider>
+            <SiteHeader />
+            <main className="flex-1">{children}</main>
+            <Toaster />
+          </AuthProvider>
+        </GoogleAuthProvider>
       </body>
     </html>
   );

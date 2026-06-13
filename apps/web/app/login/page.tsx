@@ -18,9 +18,24 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { GoogleLoginButton } from '@/components/google-login-button';
+
+function redirectAfterLogin(user: { role?: { id: number } | null }, next: string | null, router: ReturnType<typeof useRouter>) {
+  if (next) {
+    router.push(next);
+  } else if (user.role?.id === RoleId.Organizer) {
+    router.push('/organizer/events');
+  } else if (user.role?.id === RoleId.Admin) {
+    router.push('/admin/dashboard');
+  } else if (user.role?.id === RoleId.Staff) {
+    router.push('/staff/dashboard');
+  } else {
+    router.push('/events');
+  }
+}
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -33,17 +48,7 @@ export default function LoginPage() {
       const user = await login(email, password);
       toast.success('Logged in');
       const next = new URLSearchParams(window.location.search).get('next');
-      if (next) {
-        router.push(next);
-      } else if (user.role?.id === RoleId.Organizer) {
-        router.push('/organizer/events');
-      } else if (user.role?.id === RoleId.Admin) {
-        router.push('/admin/dashboard');
-      } else if (user.role?.id === RoleId.Staff) {
-        router.push('/staff/dashboard');
-      } else {
-        router.push('/events');
-      }
+      redirectAfterLogin(user, next, router);
     } catch (err) {
       const msg =
         err instanceof ApiError ? err.message : 'Login failed. Try again.';
@@ -91,6 +96,28 @@ export default function LoginPage() {
             <Button type="submit" className="w-full" disabled={submitting}>
               {submitting ? 'Logging in…' : 'Log in'}
             </Button>
+            <div className="relative w-full">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card text-muted-foreground px-2">or</span>
+              </div>
+            </div>
+            <GoogleLoginButton
+              onSuccess={async (idToken) => {
+                try {
+                  const user = await loginWithGoogle(idToken);
+                  toast.success('Logged in');
+                  const next = new URLSearchParams(window.location.search).get('next');
+                  redirectAfterLogin(user, next, router);
+                } catch (err) {
+                  const msg = err instanceof ApiError ? err.message : 'Google login failed.';
+                  toast.error(msg);
+                }
+              }}
+              onError={() => toast.error('Google sign-in was cancelled or failed.')}
+            />
             <p className="text-muted-foreground text-sm">
               No account?{' '}
               <Link href="/register" className="text-foreground underline">

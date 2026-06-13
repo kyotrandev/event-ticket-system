@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/lib/auth-context';
 import { ApiError } from '@/lib/api';
 import { RoleId } from '@/lib/types';
+import { GoogleLoginButton } from '@/components/google-login-button';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,7 +21,7 @@ import {
 } from '@/components/ui/card';
 
 export default function RegisterPage() {
-  const { register } = useAuth();
+  const { register, loginWithGoogle } = useAuth();
   const router = useRouter();
   const [form, setForm] = useState({
     firstName: '',
@@ -165,6 +166,31 @@ export default function RegisterPage() {
             <Button type="submit" className="w-full" disabled={submitting}>
               {submitting ? 'Creating account…' : 'Sign up'}
             </Button>
+            {!asOrganizer && (
+              <>
+                <div className="relative w-full">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-card text-muted-foreground px-2">or</span>
+                  </div>
+                </div>
+                <GoogleLoginButton
+                  onSuccess={async (idToken) => {
+                    try {
+                      await loginWithGoogle(idToken);
+                      toast.success('Account created and logged in!');
+                      router.push('/events');
+                    } catch (err) {
+                      const msg = err instanceof ApiError ? err.message : 'Google sign-up failed.';
+                      toast.error(msg);
+                    }
+                  }}
+                  onError={() => toast.error('Google sign-in was cancelled or failed.')}
+                />
+              </>
+            )}
             <p className="text-muted-foreground text-sm">
               Already have an account?{' '}
               <Link href="/login" className="text-foreground underline">
